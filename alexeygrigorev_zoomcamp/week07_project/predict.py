@@ -10,13 +10,13 @@ model_file = 'model.bin'
 with open(model_file, 'rb') as f_in:
     dv, model = pickle.load(f_in)
 
-app = Flask('churn')
+app = Flask('salary')
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    customer = request.get_json()
+    person = request.get_json()
 
-    X = dv.transform([customer])
+    X = dv.transform([person])
     d = xgb.DMatrix(X,feature_names=dv.get_feature_names())
     y_pred = model.predict(d)
 
