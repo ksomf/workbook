@@ -65,6 +65,8 @@ To deploy on aws run
 
 ## Deployed Model Test
 
-As the test is deployed on AWS you can interface directly with it by
+As the trained model is deployed on AWS you can interface directly with it by running
 
 >python predict-test-remote.py
+
+which will access the AWS instance for a query
