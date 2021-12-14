@@ -1,9 +1,13 @@
 # Capstone Project: Non-NLP analysis of TED talk words
 
-What gets people to view TED talks? Here we try to find compare the effects of words used and audience reaction. Using this we can figure out TED equivalent view counts from a transcript.
+What gets people to view TED talks? Here we try to find compare the effects of words used and audience reaction. We are able to get from [the web](data.world) raw transcripts of the a bunch of TED talks from 2006 to 2017, and some metadata; including views and duration. 
+By extracting counts of the most frequent words we can try to find patterns in common words that predict view count. By using this trained model we can then roughly predict how many TED talk views any transcript would have.
+
+![Word Cloud](wordcloud.png)
 
 ## Environment Setup
-The project dependencies are managed using **pipenv** to use this model first ensure you have installed pipenv by running `pip install pipenv` and navigate to the directory of this project and run `pipenv install` to install all dependencies and launch the shell.
+
+The project dependencies are managed using `pipenv` to use this model first ensure you have installed pipenv by running `pip install pipenv` and navigate to the directory of this project and run `pipenv install --dev` to install all dependencies and launch the shell.
 
 ## Model training
 
@@ -44,7 +48,7 @@ kubectl apply -f kube-config/model-deployment.yaml
 kubectl apply -f kube-config/model-service.yaml
 kubectl apply -f kube-config/gateway-deployment.yaml
 kubectl apply -f kube-config/gateway-service.yaml
-kubectl prot-forward service/gateway 9696:80
+kubectl port-forward service/gateway 9696:80
 ```
 
 After these commands have been run the service can be tested with the same test script `python test.py`
