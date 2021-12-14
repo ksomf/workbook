@@ -53,4 +53,4 @@ kubectl apply -f kube-config/gateway-service.yaml
 kubectl port-forward service/gateway 9696:80
 ```
 
-After these commands have been run the service can be tested with the same test script `python test.py`
+After these commands have been run the service can be tested with the same test script `python test.py`. To remove the cluster you can run `kind delete cluster`.
