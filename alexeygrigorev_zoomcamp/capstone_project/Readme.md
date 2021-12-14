@@ -11,10 +11,12 @@ Preparation EDA and tuning is performed in the notebook [notebook.ipynb](https:/
 
 The tuned final model can be trained using [train.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/train.py) by
 
->pipenv shell
->python train.py
+```bash
+pipenv shell
+python train.py
+```
 
-Using the resultant model or the supplied model in the project it can be deployed locally with either `docker-compose` or `kubectl` as described below and tested using .[test.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/test.py)
+Using the resultant model or the supplied model in the project it can be deployed locally with either `docker-compose` or `kubectl` as described below and tested using [test.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/test.py).
 
 ## Docker Setup
 
@@ -24,8 +26,10 @@ The assumption is that you have docker already installed but need to install a f
 
 To install the Docker instances navigate to the folder and run 
 
->docker build -t view-gateway:dnnv1 -f view-gateway.dockerfile .
->docker build -t view-model:dnnv1 -f view-model.dockerfile .
+```bash
+docker build -t view-gateway:dnnv1 -f view-gateway.dockerfile .
+docker build -t view-model:dnnv1 -f view-model.dockerfile .
+```
 
 The docker isntances can be deployed by `docker-compose up` and tested with `python test.py`
 
@@ -33,12 +37,14 @@ The docker isntances can be deployed by `docker-compose up` and tested with `pyt
 
 First make sure that you have a kind cluster running by running `kind create cluster`. Run the following commands below in order to load the docker images, the deployment,  services, and finally port forwarding it to the previous port.
 
->kind load docker-image view-gateway:dnnv1
->kind load docker-image view-model:dnnv1
->kubectl apply -f kube-config/model-deployment.yaml
->kubectl apply -f kube-config/model-service.yaml
->kubectl apply -f kube-config/gateway-deployment.yaml
->kubectl apply -f kube-config/gateway-service.yaml
->kubectl prot-forward service/gateway 9696:80
+```bash
+kind load docker-image view-gateway:dnnv1
+kind load docker-image view-model:dnnv1
+kubectl apply -f kube-config/model-deployment.yaml
+kubectl apply -f kube-config/model-service.yaml
+kubectl apply -f kube-config/gateway-deployment.yaml
+kubectl apply -f kube-config/gateway-service.yaml
+kubectl prot-forward service/gateway 9696:80
+```
 
 After these commands have been run the service can be tested with the same test script `python test.py`
