@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tf-serving-view-model
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tf-serving-view-model
+  template:
+    metadata:
+      labels:
+        app: tf-serving-view-model
+    spec:
+      containers:
+      - name: tf-serving-view-model
+        image: view-model:dnnv1
+        resources:
+          limits:
+            memory: "1024Mi"
+            cpu: "0.5"
+        ports:
+        - containerPort: 8500

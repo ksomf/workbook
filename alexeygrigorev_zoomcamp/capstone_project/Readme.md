@@ -39,29 +39,16 @@ and to run the docer isntance run
 
 >docker-compose up
 
-### AWS Elastic Beanstalk Deploy
 
-To deploy eb app run (after *pipenv shell*)
-
->eb init -p docker -r region ted-prediction-serving 
-
-for instance with **region** replaced with **us-west-1**. To test locally you can run 
-
->eb local run --port 9696
-
-and in another terminal window
-
->pipenv shell
->python predict-test-local.py
-
-To deploy on aws run
-
->eb create salary-serving-env
-
-## Deployed Model Test
-
-As the trained model is deployed on AWS you can interface directly with it by running
-
->python predict-test-remote.py
-
-which will access the AWS instance for a query
+>kind create cluster
+>kind load docker-image view-gateway:dnnv1
+>kind load docker-image view-model:dnnv1
+>kubectl cluster-info --context kind-kind
+>kubectl get deployment
+>kubectl get pod
+>kubectl port-forward <name> 9696:9696
+>kubectl apply -f kube-config/model-deployment.yaml
+>kubectl apply -f kube-config/model-service.yaml
+>kubectl apply -f kube-config/gateway-deployment.yaml
+>kubectl apply -f kube-config/gateway-service.yaml
+>kubectl prot-forward service/gateway 9696:80
