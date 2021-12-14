@@ -3,16 +3,7 @@
 What gets people to view TED talks? Here we try to find compare the effects of words used and audience reaction. Using this we can figure out TED equivalent view counts from a transcript.
 
 ## Environment Setup
-The project dependencies are managed using **pipenv** to use this model first ensure you have installed pipenv 
-
->pip install pipenv
-
-and navigate to the directory of this project and run
-
->pipenv install
->pipenv shell
-
-to install all dependencies.
+The project dependencies are managed using **pipenv** to use this model first ensure you have installed pipenv by running `pip install pipenv` and navigate to the directory of this project and run `pipenv install` to install all dependencies and launch the shell.
 
 ## Model training
 
@@ -23,32 +14,31 @@ The tuned final model can be trained using [train.py](https://github.com/ksomf/w
 >pipenv shell
 >python train.py
 
-after which docker or aws can be setup
+Using the resultant model or the supplied model in the project it can be deployed locally with either `docker-compose` or `kubectl` as described below and tested using .[test.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/test.py)
 
-### Docker Setup
+## Docker Setup
 
 The assumption is that you have docker already installed but need to install a few extra packages, links for instructions below:
  - **MacOSX:** [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
  - **Linux and Windows:** [docker-compose](https://docs.docker.com/compose/install/), [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/), and [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
-To install the Docker instance navigate to the folder and run 
+
+To install the Docker instances navigate to the folder and run 
 
 >docker build -t view-gateway:dnnv1 -f view-gateway.dockerfile .
 >docker build -t view-model:dnnv1 -f view-model.dockerfile .
 
-and to run the docer isntance run
+The docker isntances can be deployed by `docker-compose up` and tested with `python test.py`
 
->docker-compose up
+## Kubernetes Setup
 
+First make sure that you have a kind cluster running by running `kind create cluster`. Run the following commands below in order to load the docker images, the deployment,  services, and finally port forwarding it to the previous port.
 
->kind create cluster
 >kind load docker-image view-gateway:dnnv1
 >kind load docker-image view-model:dnnv1
->kubectl cluster-info --context kind-kind
->kubectl get deployment
->kubectl get pod
->kubectl port-forward <name> 9696:9696
 >kubectl apply -f kube-config/model-deployment.yaml
 >kubectl apply -f kube-config/model-service.yaml
 >kubectl apply -f kube-config/gateway-deployment.yaml
 >kubectl apply -f kube-config/gateway-service.yaml
 >kubectl prot-forward service/gateway 9696:80
+
+After these commands have been run the service can be tested with the same test script `python test.py`
