@@ -1,15 +1,11 @@
 # Capstone Project: Non-NLP analysis of TED talk words
 
-What gets people to view TED talks? Here we try to find compare the effect of various effects like: 
+What gets people to view TED talks? Here we try to find compare the effects of words used and audience reaction. Using this we can figure out TED equivalent view counts from a transcript.
 
-- **Publication date:** Maybe TED talks as a whole become more and less popular over time
-- **Common description and title words:** Presumable people browsing TED videos and looking at ones that catch their interest
-- **Talk transcript contents:** Presumably word of mouth and/or algorithms
-
-## Environment Setup 
+## Environment Setup
 The project dependencies are managed using **pipenv** to use this model first ensure you have installed pipenv 
 
->pip install pipenv 
+>pip install pipenv
 
 and navigate to the directory of this project and run
 
@@ -20,10 +16,9 @@ to install all dependencies.
 
 ## Model training
 
-Preparation EDA and tuning is performed in the notebook [notebook.ipynb]()
+Preparation EDA and tuning is performed in the notebook [notebook.ipynb](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/notebook.ipynb)
 
-
-The tuned final model can be trained using [train.py]() by
+The tuned final model can be trained using [train.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/train.py) by
 
 >pipenv shell
 >python train.py
@@ -47,16 +42,16 @@ To deploy eb app run (after *pipenv shell*)
 >eb init -p docker -r region ted-prediction-serving 
 
 for instance with **region** replaced with **us-west-1**. To test locally you can run 
-    
+
 >eb local run --port 9696
-    
+
 and in another terminal window
-    
+
 >pipenv shell
 >python predict-test-local.py
-    
+
 To deploy on aws run
-    
+
 >eb create salary-serving-env
 
 ## Deployed Model Test
