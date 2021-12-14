@@ -7,7 +7,7 @@ By extracting counts of the most frequent words we can try to find patterns in c
 
 ## Environment Setup
 
-The project dependencies are managed using `pipenv` to use this model first ensure you have installed pipenv by running `pip install pipenv` and navigate to the directory of this project and run `pipenv install --dev` to install all dependencies and launch the shell.
+The project dependencies are managed using `pipenv` to use this model first ensure you have installed pipenv by running `pip install pipenv` and navigate to the directory of this project and run `pipenv install --dev` to install all dependencies and launch the shell using `pipenv shell`.
 
 ## Model training
 
