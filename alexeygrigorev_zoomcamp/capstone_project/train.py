@@ -60,6 +60,8 @@ n_emotes_analyse = 2
 for emote in emote_counts.head(n=n_emotes_analyse).keys():
     df[f'times_{emote}'] = df['emotes'].apply(lambda xs: xs.count(emote))
 
+numerical_columns = df.select_dtypes(include='number').columns
+
 val_frac   = 0.2
 test_frac  = 0.2
 train_frac = 1.0 - val_frac - test_frac

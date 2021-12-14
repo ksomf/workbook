@@ -20,9 +20,10 @@ pipenv shell
 python train.py
 ```
 
+The data `data.csv` and model `view-model` have been committed to the project.
 Using the resultant model or the supplied model in the project it can be deployed locally with either `docker-compose` or `kubectl` as described below and tested using [test.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/test.py).
 
-## Docker Setup
+## Docker Images and deployment
 
 The assumption is that you have docker already installed but need to install a few extra packages, links for instructions below:
  - **MacOSX:** [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
