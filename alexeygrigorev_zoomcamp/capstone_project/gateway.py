@@ -18,6 +18,8 @@ from proto import np_to_protobuf
 
 spec_file  = 'keras_model_spec.json'
 spec = json.load(open(spec_file,'r'))
+input_layer_name  = 'normalization_input'
+output_layer_name = 'dense_2'
 
 def transcript_to_tokens(s):
     s =  list(map(lambda s: s.strip(), filter(len,s.split('\r'))))
@@ -71,10 +73,10 @@ def predict():
     pb_request = predict_pb2.PredictRequest()
     pb_request.model_spec.name = 'view-model'
     pb_request.model_spec.signature_name = 'serving_default'
-    pb_request.inputs['normalization_46_input'].CopyFrom(np_to_protobuf(talk_df.values))
+    pb_request.inputs[input_layer_name].CopyFrom(np_to_protobuf(talk_df.values))
 
     pb_response = stub.Predict(pb_request,timeout=20.0)
-    preds = pb_response.outputs['dense_108'].float_val
+    preds = pb_response.outputs[output_layer_name].float_val
 
     result = {
         'predicted_views': np.expm1(preds).tolist()[0]

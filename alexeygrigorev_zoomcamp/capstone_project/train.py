@@ -107,7 +107,7 @@ best = train_NN(df_full_train,y_full_train,df_test,y_test
 
 #best.model.save('keras_model')
 tf.saved_model.save(best.model, 'view-model')
-model_spec = { 'columns': df[numerical_columns].columns.to_list(),
+model_spec = { 'columns': list(filter(lambda x: x != 'views',df[numerical_columns].columns.to_list())),
                'trained_words': word_counts.head(n=n_words_analyse).keys().to_list(),
                'trained_emotes': emote_counts.head(n=n_emotes_analyse).keys().to_list()}
 

@@ -22,6 +22,7 @@ python train.py
 
 The data `data.csv` and model `view-model` have been committed to the project.
 Using the resultant model or the supplied model in the project it can be deployed locally with either `docker-compose` or `kubectl` as described below and tested using [test.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/test.py).
+In case parameters are changed in training make sure to run `saved_model_cli show --dir view-model --all` and change the input and output layer names in [gateway.py](https://github.com/ksomf/workbook/blob/main/alexeygrigorev_zoomcamp/capstone_project/test.py).
 
 ## Docker Images and deployment
 
@@ -36,11 +37,11 @@ docker build -t view-gateway:dnnv1 -f view-gateway.dockerfile .
 docker build -t view-model:dnnv1 -f view-model.dockerfile .
 ```
 
-The docker isntances can be deployed by `docker-compose up` and tested with `python test.py`
+The docker instances can be deployed by `docker-compose up` and tested with `python test.py`
 
 ## Kubernetes Setup
 
-First make sure that you have a kind cluster running by running `kind create cluster`. Run the following commands below in order to load the docker images, the deployment,  services, and finally port forwarding it to the previous port.
+After creating the docker images above we can deploy them using Kubernetes locally. First make sure that you have a kind cluster running by running `kind create cluster`. Run the following commands below in order to load the docker images, the deployment,  services, and finally port forwarding it to the previous port.
 
 ```bash
 kind load docker-image view-gateway:dnnv1
