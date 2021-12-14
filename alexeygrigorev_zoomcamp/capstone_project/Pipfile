@@ -4,13 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-scikit-learn = "*"
 flask = "*"
 gunicorn = "*"
 requests = "*"
 pandas = "*"
-xgboost = "*"
-tensorflow = "*"
+grpcio = "==1.42.0"
+tensorflow-protobuf = "==2.7.0"
 
 [dev-packages]
 awsebcli = "*"
@@ -18,6 +17,8 @@ wordcloud = "*"
 jupyter = "*"
 matplotlib = "*"
 seaborn = "*"
+tensorflow = "*"
+tensorflow-serving-api = "==2.7.0"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"

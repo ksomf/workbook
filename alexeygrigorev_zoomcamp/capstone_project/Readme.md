@@ -27,13 +27,17 @@ after which docker or aws can be setup
 
 ### Docker Setup
 
+The assumption is that you have docker already installed but need to install a few extra packages, links for instructions below:
+ - **MacOSX:** [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
+ - **Linux and Windows:** [docker-compose](https://docs.docker.com/compose/install/), [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/), and [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
 To install the Docker instance navigate to the folder and run 
 
->docker build -t ted-prediction .
+>docker build -t view-gateway:dnnv1 -f view-gateway.dockerfile .
+>docker build -t view-model:dnnv1 -f view-model.dockerfile .
 
-and to run the Docker instance run
+and to run the docer isntance run
 
->docker run -it -p 9696:9696 ted-prediction
+>docker-compose up
 
 ### AWS Elastic Beanstalk Deploy
 
