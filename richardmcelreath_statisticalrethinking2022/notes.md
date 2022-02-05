@@ -1,0 +1,54 @@
+## Lecture 1: Drawing the Baysian Owl
+
+### Three core goals
+
+ 1. Understand what you are doing
+   - So you know every step explicitly, rather than relying on pre-built black boxes (or institutional processes)
+ 2. Document your work to reduce errors
+   - For future me; for revision and reuse
+ 3. Respectable scientific workflow
+   - Document, orderly, justifyable reasoning, ie. useful
+
+### To draw the baysian owl
+
+ 1. Theoretical estimand 
+   - What are you trying to do in the first place, 
+   - Not vague metaphorical connection between research, buzzwords, and some datasets.
+ 2. Scientific causal model(s)
+	- Generate synthetic observations to be able to probe statistically
+ 3. Build statistical models from (1) and (2)
+	- Or whether it is possible at all
+ 4. Simulate (2) to validate (3) yields (1)
+	- To justify workflow -> so results are believable
+ 5. Analyse the real data
+
+The reason for using a Bayesian aproach for this is the flexibility, ability to express uncertainty in any situation and direct solutions for measurement errors and missing data.
+All this without worrying about the procedure and estimator to use.
+
+Science should be before statistics, causal inference is the component that requires the most care. "No causes in, no causes out" -Nancy Cartwright
+
+### What is Causal Inference?
+`Causation does not imply correlation`
+
+- Causal inference is prediction
+  - What if I do this? -> causal inference can give the answer
+  - Untangle the associations into causes
+- Causal inference is *imputation* of missing observations
+  - What if I do this again
+
+### DAG (Directed Acyclic Graphs)
+
+- Heuristic causal models -> Analysable with your eyeballs (And also just partially ordered **Set**)
+- Confound is a variable that affect both sides of a causal relationship
+- Used to make transparent scientific assumptions to justify scientific effore expose it to useful critique and connect theories to the Golems (The brainless statistical models)
+
+## Lecture 2: Introdution to Bayesian Infference
+
+How can we measure what percentage of the earth is covered with water; Spherical uniform sampling. But how do we quantify uncertainty in our measurement. Use Bayesian data analysis.
+TODO submodule the plotting code from the lecture and input the blue marble here.
+
+In essence it is all just counting. The advantage of this is that we can update our most likely conjecture by taking another measurement (Baysian updating).
+
+ 1. State a causal model for observations arrise, given each possible explanation
+ 2. Count the ways the data could arrive for each explanation
+ 3. Relative plausibility is relative value from (2)
