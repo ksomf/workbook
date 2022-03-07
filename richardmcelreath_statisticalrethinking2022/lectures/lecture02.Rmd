@@ -1,0 +1,9 @@
+# Lecture 2: Introdution to Bayesian Infference
+How can we measure what percentage of the earth is covered with water; Spherical uniform sampling. But how do we quantify uncertainty in our measurement. Use Bayesian data analysis.
+TODO submodule the plotting code from the lecture and input the blue marble here.
+
+In essence it is all just counting. The advantage of this is that we can update our most likely conjecture by taking another measurement (Baysian updating).
+
+ 1. State a causal model for observations arrise, given each possible explanation
+ 2. Count the ways the data could arrive for each explanation
+ 3. Relative plausibility is relative value from (2)

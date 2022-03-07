@@ -1,0 +1,30 @@
+---
+title: "Statistical Rethinking Workbook"
+author: "Dr. Kim Y. Somfleth"
+abstract: "Working through the lectures provided by Richard McElreath, the 2022 version of Statistical Rethinking."
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  bookdown::pdf_document2: 
+    template: "bookdown_templates/template.latex"
+    keep_tex: true
+    number_sections: false
+bibliography: "statistical_rethinking.bib"
+biblio-style: "bookdown_templates/bst/hunsrtnat.bst"
+link-citations: yes
+colorlinks: true
+params:
+  chapters: all
+---
+
+```{r include=FALSE, echo=FALSE}
+  knitr::opts_chunk$set(echo=TRUE)
+```
+
+```{r main, child = if(params$chapters == 'all') 'lectures/lecture01.Rmd' }
+```
+
+```{r main, child = if(params$chapters == 'all') 'lectures/lecture02.Rmd' }
+```
+
+```{r main, child = if(params$chapters != 'all') params$chapters }
+```

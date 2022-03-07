@@ -1,3 +1,6 @@
 [submodule "alexeygrigorev_zoomcamp/mlbookcamp-code"]
 	path = alexeygrigorev_zoomcamp/mlbookcamp-code
 	url = https://github.com/alexeygrigorev/mlbookcamp-code
+[submodule "richardmcelreath_statisticalrethinking2022/bookdown_templates"]
+	path = richardmcelreath_statisticalrethinking2022/bookdown_templates
+	url = https://github.com/ksomf/bookdown_templates
