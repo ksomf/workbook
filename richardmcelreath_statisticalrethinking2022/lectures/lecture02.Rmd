@@ -1,4 +1,5 @@
 # Lecture 2: Introdution to Bayesian Inference
+
 ```{r FigureBlueDot, echo=FALSE, include=TRUE, out.width='0.49\\linewidth', fig.align='center', fig.cap=c('(ref:FigureBlueDotCaption)')}
 knitr::include_graphics('external_images/globe_east_2048.jpg')
 ```
@@ -72,7 +73,7 @@ combine_gardens <- function(gardens,sep=2){
 		group_by(chunk) %>% 
 		subset(y==max(y)) %>% 
 		summarise(n=n()) %>% 
-		mutate(n=c(sep/2,n+sep) %>% head(-1)) %>% 
+		mutate(n=lag(n+sep,n=1,default=sep/2)) %>% #c(sep/2,n+sep) %>% head(-1)) %>% 
 		mutate(ac=cumsum(n)) %>% 
 		select(-n)
 	points <- left_join(points,gaps,by='chunk') %>% mutate(x=x+ac)
@@ -146,3 +147,119 @@ garden = map(seq(0,bag_size),gen_universe) %>% combine_gardens()
 draw_garden(garden$points,garden$lines,pick_alpha=TRUE,vertical_lines=garden$vlines)
 ```
 (ref:MarbleVerseFigureCaption) The universes of possible two colour four marble equivalent bags.
+
+## Posterior: Bayes' Theorem
+
+$$ P(A|B) = \frac{P(B|A)P(A)}{P(B)} $$
+
+Can think of it as updating our prior knowledge of the answer $P(A)$ with new measurement $P(B|A)$, giving the new prior $P(A|B)$ given the new data $B$.
+
+For instance in our water case the distribution based on uniform samples is just
+$$ (1-x)^nx^m $$
+for $n$ instances of land and $m$ instances of water. This distribution is a binomial distribution (Figure \@ref(fig:BinomFigure)).
+$$ P(W,L|p) = \frac{(W+L)!}{W!L!}p^W(1-p)^L $$
+or
+$$ P(W in N|p) = \frac{N!}{W!(N-W)!}p^W(1-p)^{N-W}. $$
+So Bayes' gives
+$$ P(p|W,L) = \frac{P(W,L|p)P(p)}{P(W,L)} $$
+making the updating step much easier to understand. Note that a flat prior, ie each $p$ between $0$ and $1$ is equally likely; a flat prior.
+
+
+
+So the next question how does one report a result from such a distribution. Can one use the mean or median; well generally no the distribution is the answer, and these 'point estimates' remove some of the complexity of your data, of course publications may want you to present such an arbitrary value. Well then maybe a confidence interval to communicate some of the shape; again no, but somewhat more useful, it is just a reduction of the distribution. For instance a 50% interval doesn't really describe the data that well as the center or first or last 50% are equally valid. Something like a 99% interval does have more of a use describing how well something is described, but it is really just arbitrary -- **The distribution is the answer** -- 95% intervals don't have anything to do with robustness.
+
+```{r BinomFigure, echo=TRUE, include=TRUE, out.width='0.49\\linewidth', fig.align='center', fig.cap=c('(ref:BinomFigureCaption)')}
+ps = seq(0,1,length.out=1000)
+prior = rep_along(ps,1) #flat prior
+labels = list('1'='1/1','2'='3/6','3'='5/8')
+d = data.frame( ps=ps
+              , ys1 = dbinom(1,1,ps)*prior
+              , ys2 = dbinom(3,6,ps)*prior
+              , ys3 = dbinom(5,8,ps)*prior ) %>%
+	mutate( ys1 = ys1/sum(ys1), ys2=ys2/sum(ys2), ys3=ys3/sum(ys3) ) %>%
+	pivot_longer( ys1:ys3, names_to='dist', names_prefix='ys', values_to='ys')
+ggplot(d) + 
+	geom_line(aes(x=ps,y=ys,colour=dist), size=2) +
+	scale_colour_manual(name='Samples Water', labels=c('1/1','3/6','5/8'), values=ggthemes::tableau_color_pal()(3))
+```
+
+(ref:BinomFigureCaption) Binomial distributions for proportion of 'true' given specified true and total measurements.
+
+## From Posterior to Prediction
+
+To make actual predictions, we model of the posterior distribution against some question. The simple way is to take samples of the posterior and create a predictive distribution given the sampled $p$ for a number of discrete samples $n$. This predictive distribution is then sampled to construct the posterior predictive distribution through accumulation. These two steps are just rbinom in R, see (Figure \@ref(fig:PosteriorPredictiveFigure)), completed also for the prior, showing the results expected by a repeat experiment.
+
+```{r PosteriorPredictiveFigure, echo=TRUE, out.width='0.49\\linewidth', fig.align='center', fig.cap=c('(ref:PosteriorPredictiveFigureCaption)') }
+n_samples=1e4
+w = 6
+size = 9
+
+ps = seq(0,1,length.out=n_samples)
+prior = rep_along(ps,1)
+probability = dbinom( w, size=size, prob=ps )
+posterior = probability * prior
+posterior = posterior / sum(posterior)
+
+samples = sample( ps, prob=posterior, size=n_samples, replace=TRUE )
+posterior_predictive = rbinom( n_samples, size=size, prob=samples )
+
+samples_prior = sample( ps, prob=prior/sum(prior), size=n_samples, replace=TRUE )
+prior_predictive = rbinom( n_samples, size=size, prob=samples_prior )
+
+d = data.frame( x   =c(posterior_predictive,prior_predictive)
+			  , type=rep( c('Posterior Predictive','Prior Predictive')
+			  	 	    , times=c(n_samples,n_samples)))
+
+d %>% 
+	ggplot(aes(x=x,colour=type,fill=type)) + 
+	geom_histogram(binwidth=1,position='dodge') + 
+	labs(title=paste0(w,' wins in ',size,' samples posterior predictive'))
+```
+
+# Week01 Homework
+
+1. Suppose the globe toss data had been 4 water, 11 land. Construct the posterior distribution (using grid approximation) with flat prior.
+
+```{r week01_q01, echo=TRUE}
+water = 4
+land = 11
+
+n_samples = 1e4
+
+ps = seq(0,1,length.out=n_samples)
+prior = rep_along(ps,1)
+probability = dbinom(water,water+land,ps)
+posterior = probability * prior
+posterior = posterior / sum(posterior)
+
+d = data.frame( x=ps, y=posterior )
+ggplot(d) + 
+	geom_line(aes(x=x,y=y), colour=ggthemes::tableau_color_pal()(1), size=2)
+```
+
+2. The same but 4 water, 2 land and step prior at $p=0.5$
+
+```{r week01_q02, echo=TRUE}
+water = 4
+land = 2
+
+n_samples = 1e4
+
+ps = seq(0,1,length.out=n_samples)
+prior = rep(c(0,1),times=c(n_samples/2,n_samples/2))
+probability = dbinom(water,water+land,ps)
+posterior = probability * prior
+posterior = posterior / sum(posterior)
+
+d = data.frame( x=ps, y=posterior )
+ggplot(d) + 
+	geom_line(aes(x=x,y=y), colour=ggthemes::tableau_color_pal()(1), size=2)
+```
+
+3. Compute (assumed central) 89% percentile and HPDI intervals from (2).
+
+```{r week01_q03, echo=TRUE}
+library(rethinking, quietly=TRUE)
+samples = sample( ps, prob=posterior, size=n_samples, replace=TRUE )
+c(HPDI(samples),PI(samples))
+```

@@ -23,16 +23,20 @@ library(ggplot2)
 library(tidyverse)
 ```
 
-```{r main, child = if(params$chapters == 'all') 'lectures/introduction' }
+```{r introduction, child = if(params$chapters == 'all') 'lectures/introduction' }
 ```
 
-```{r main, child = if(params$chapters == 'all') 'lectures/lecture01.Rmd' }
+```{r lecture01, child = if(params$chapters == 'all') 'lectures/lecture01.Rmd' }
 ```
 
-```{r main, child = if(params$chapters == 'all') 'lectures/lecture02.Rmd' }
+```{r lecture02, child = if(params$chapters == 'all') 'lectures/lecture02.Rmd' }
 ```
 
-```{r main, child = if(params$chapters != 'all') params$chapters }
+```{r chapter, child = if(params$chapters != 'all') params$chapters }
+```
+
+```{r session}
+sessionInfo()
 ```
 
 # References
