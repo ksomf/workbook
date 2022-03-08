@@ -17,7 +17,13 @@ params:
 ---
 
 ```{r include=FALSE, echo=FALSE}
-  knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(echo=TRUE)
+
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r main, child = if(params$chapters == 'all') 'lectures/introduction' }
 ```
 
 ```{r main, child = if(params$chapters == 'all') 'lectures/lecture01.Rmd' }
@@ -28,3 +34,5 @@ params:
 
 ```{r main, child = if(params$chapters != 'all') params$chapters }
 ```
+
+# References

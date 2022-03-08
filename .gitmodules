@@ -4,3 +4,6 @@
 [submodule "richardmcelreath_statisticalrethinking2022/bookdown_templates"]
 	path = richardmcelreath_statisticalrethinking2022/bookdown_templates
 	url = https://github.com/ksomf/bookdown_templates
+[submodule "richardmcelreath_statisticalrethinking2022/stat_rethinking_2022"]
+	path = richardmcelreath_statisticalrethinking2022/stat_rethinking_2022
+	url = https://github.com/rmcelreath/stat_rethinking_2022

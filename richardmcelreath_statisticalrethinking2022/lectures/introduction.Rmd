@@ -1,0 +1,3 @@
+# Introduction
+
+This is my workbook following along the 2022 version of Statistical Rethinking [@mcelreathStatisticalRethinkingBayesian2022], using his R package [@rethinkingRPackage]. A lot of the code has been adapted from [@kurzStatisticalRethinkingSecondEd2021] to use more modern ggplot and tidyverse constructs.

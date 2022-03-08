@@ -1,9 +1,148 @@
-# Lecture 2: Introdution to Bayesian Infference
-How can we measure what percentage of the earth is covered with water; Spherical uniform sampling. But how do we quantify uncertainty in our measurement. Use Bayesian data analysis.
-TODO submodule the plotting code from the lecture and input the blue marble here.
+# Lecture 2: Introdution to Bayesian Inference
+```{r FigureBlueDot, echo=FALSE, include=TRUE, out.width='0.49\\linewidth', fig.align='center', fig.cap=c('(ref:FigureBlueDotCaption)')}
+knitr::include_graphics('external_images/globe_east_2048.jpg')
+```
+
+(ref:FigureBlueDotCaption) The famous NASA blue dot from Visible Earth [@visibleEarth] which we can think of throwing imaginary asteroids at to sample.
+
+How can we measure what percentage of the earth is covered with water; Spherical uniform sampling (Figure \@ref(fig:FigureBlueDot)). But how do we quantify uncertainty in our measurement? We use Bayesian data analysis.
 
 In essence it is all just counting. The advantage of this is that we can update our most likely conjecture by taking another measurement (Baysian updating).
 
  1. State a causal model for observations arrise, given each possible explanation
  2. Count the ways the data could arrive for each explanation
  3. Relative plausibility is relative value from (2)
+
+## Garden of Forking Data
+
+```{r garden_code}
+generate_garden <- function(bag,levels,picks=NULL){
+	len <- length(bag)
+	x   <- seq(0.5,len-0.5,length.out=len)
+	if( is.null(picks) ){
+		picks = rep(FALSE,levels)
+	}
+	
+	if( levels == 1 ){
+		picked=bag==picks[1]
+		return(list(points=tibble(values=bag, x=x, y=1, picked=picked  %>% as.integer()), lines=tibble()))
+	}else{
+		pick      <- picks[1]
+		next_pick <- picks[2]
+		picked      <- bag == pick
+		next_picked <- bag == next_pick
+		children_garden <- generate_garden(bag,levels-1,tail(picks,-1))
+		furthest_row <- children_garden$points %>% subset(y == max(y))
+		closest_row  <- children_garden$points %>% subset(y == min(y))
+		
+		x <- x * nrow(furthest_row)
+		new_points <- tibble(values=bag, x=x, y=1, picked=picked)
+		points_branch <- children_garden$points %>% mutate(y=y+1)
+		old_points <- tibble( values = rep(points_branch$values,times=len)
+						   	, x      = outer(points_branch$x,x,'+') %>% as.vector() - min(x)
+						   	, y      = rep(points_branch$y,times=len)
+							, picked = outer(points_branch$picked,picked,'*') %>% as.vector())
+		nearest_points <- old_points %>% subset(y == min(y))
+		points <- bind_rows(new_points,old_points)
+		
+		if( levels > 2 ){
+			lines_branch <- children_garden$lines %>% mutate(y_start=y_start+1,y_end=y_end+1)
+			old_points_in_branch <- old_points %>% subset(y > min(y))
+			old_lines <- tibble( y_start = old_points_in_branch$y - 1
+			                   , y_end   = old_points_in_branch$y
+							   , x_start = outer(lines_branch$x_start,x,'+')      %>% as.vector() - min(x)
+							   , x_end   = outer(lines_branch$x_end  ,x,'+')      %>% as.vector() - min(x)
+							   , picked  = outer(lines_branch$picked ,picked,'*') %>% as.vector() %>% as.integer())
+		}else{
+			old_lines <- tibble()
+		}
+		new_lines <- tibble( y_start=1, y_end=2
+					  	   , x_start=rep(x,times=rep(len,len))
+						   , x_end  =nearest_points$x
+						   , picked =outer(next_picked,picked,'*') %>% as.vector() %>% as.integer())
+		lines <- bind_rows(new_lines,old_lines)
+		return(list(points=points,lines=lines))
+	}
+}
+
+combine_gardens <- function(gardens,sep=2){
+	points <- gardens %>% lapply(function(x) x$points) %>% bind_rows(.id='chunk')
+	lines  <- gardens %>% lapply(function(x) x$lines ) %>% bind_rows(.id='chunk')
+	gaps <- points %>% 
+		group_by(chunk) %>% 
+		subset(y==max(y)) %>% 
+		summarise(n=n()) %>% 
+		mutate(n=c(sep/2,n+sep) %>% head(-1)) %>% 
+		mutate(ac=cumsum(n)) %>% 
+		select(-n)
+	points <- left_join(points,gaps,by='chunk') %>% mutate(x=x+ac)
+	lines  <- left_join(lines ,gaps,by='chunk') %>% mutate(x_start=x_start+ac,x_end=x_end+ac)
+	vlines <- gaps %>% mutate(ac = ac - sep/2)  %>% pull(ac)
+	return(list(points=points,lines=lines,vlines=vlines))
+}
+
+draw_garden <- function(points,lines,pick_alpha=TRUE,vertical_lines=NULL){
+	colours <- points$values %>% unique()
+	values2colour <- ggthemes::tableau_color_pal()(colours %>% length()) %>% setNames(colours)
+	leaves <- points %>% subset(y == max(y))
+	levels <- points %>% pull(y) %>% max()
+	#garden$points <- garden$points %>% mutate(fill=values2colour[values] %>% as.vector())
+
+	if( !pick_alpha ){
+		points$picked <- 1
+		lines$picked  <- 1
+	}
+	
+	p <- points %>% 
+		ggplot(aes(x=x,y=y)) +
+		geom_point(aes(fill=values,alpha=picked),shape=21, size=3) +
+		geom_segment(aes(x=x_start,xend=x_end,y=y_start,yend=y_end,alpha=picked),data=lines) +
+		coord_polar() +
+		scale_x_continuous(limits=c(0,leaves$x %>% max %>% ceiling + 1) ,breaks=NULL) +
+		scale_y_continuous(limits=c(1/levels,levels+1),breaks=NULL) +
+		scale_fill_manual(values=colours) +
+		theme( legend.position = "none"
+			  , panel.grid = element_blank()
+			  , axis.title = element_blank()
+			  , panel.background = element_rect(fill = "transparent",colour = NA)
+			  , plot.background = element_rect(fill = "transparent",colour = NA) )
+	if( !is.null(vertical_lines) ){
+		p <- p + geom_vline(xintercept = vertical_lines, colour='black' )
+	}
+	return(p)
+}
+```
+
+We start in the simpler case of finite possibilities. Suppose we are picking (with replacement) marbles out of a bag, if we have four marbles; one green, three red, we can determine all possibilities of getting three marbles (Figure \@ref(fig:MarbleGardenFigure)).
+
+```{r MarbleGardenFigure, echo=FALSE, include=TRUE, out.width='0.49\\linewidth', fig.align='center', fig.cap=c('(ref:MarbleGardenFigureCaption)'), fig.subcap=c('Universe of possible picks','Universe after picks'), fig.asp=1, fig.ncol=2 }
+bag = c('green','red','red','red')
+picks = c('red','green','red')
+garden <- generate_garden(bag,length(picks),picks)
+draw_garden(garden$points,garden$lines,pick_alpha=FALSE)
+draw_garden(garden$points,garden$lines,pick_alpha=TRUE)
+```
+	
+(ref:MarbleGardenFigureCaption) The branching universe of possibilities of picking `r length(picks)` marbles with replacement in `r bag`, as well as the possibilities for picking `r picks`.
+
+Now instead suppose we wanted to find out the proportion of marbles in the bag without prior knowledge, instead we examine the relative likelihood of different possibilities of combinations within the bag (Figure \@ref(fig:MarbleVerseFigure)).
+
+```{r MarbleVerseFigure, echo=FALSE, include=TRUE, out.width='0.9\\linewidth', fig.align='center', fig.cap=c('(ref:MarbleVerseFigureCaption)')}
+bag_size = 4
+picks = c('red','green','red')
+gen_universe = function(bag_green){
+	if(bag_green == 0){
+		bag = 'green'
+	}else if(bag_green == bag_size){
+		bag = 'red'
+	}else if(all(c(bag_size,bag_green) %% 2 == 0)){
+		bag = rep(c('green','red'),times=c(bag_green/2,(bag_size-bag_green)/2))
+	}else{
+		bag = rep(c('green','red'),times=c(bag_green,bag_size-bag_green))
+	}
+	return(generate_garden(bag,length(picks),picks))
+}
+garden = map(seq(0,bag_size),gen_universe) %>% combine_gardens()
+draw_garden(garden$points,garden$lines,pick_alpha=TRUE,vertical_lines=garden$vlines)
+```
+(ref:MarbleVerseFigureCaption) The universes of possible two colour four marble equivalent bags.
