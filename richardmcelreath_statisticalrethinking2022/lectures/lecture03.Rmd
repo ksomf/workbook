@@ -1,0 +1,18 @@
+# Lecture 3: Geocentric Models
+
+Geocentric models are using multiple orbits to explain the orbits of the planets, essentially just a fourier technique. This is very much the same as linear regression. Both are suprisingly accurate portrayals of observation with no mechanistic justification.
+
+## The Baysian argument for prediction
+
+Ancient argument by Gaus; Gaus' distribution
+$$ P(x) = \frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{1}{2}\frac{x^2}{\sigma^2}}. $$
+This allows us to define a mean and standard deviation, even on data that isn't really normal. So mean and standard deviation can be defined, but not generatively related. Like Feynman said, the name of a bird is kinda useless on it's own, but it is useful to communicate about it to other people.
+
+## Syntax for Modelling
+
+$$ W ~ Binomial(N,p) $$
+$$ p ~ Uniform(0,1) $$
+
+$W$ is the outcome, $~$ is distributed, $Binomial(N,p)$ is the distribution, and $p$ the prior. In conditional expression
+$$ Pr(W|N,p) = Binomial(W|N,p) $$
+$$ Pr(p) = Uniform(p|0,1) $$
