@@ -10,9 +10,132 @@ This allows us to define a mean and standard deviation, even on data that isn't 
 
 ## Syntax for Modelling
 
-$$ W ~ Binomial(N,p) $$
-$$ p ~ Uniform(0,1) $$
+$$ W \sim Binomial(N,p) $$
+$$ p \sim Uniform(0,1) $$
 
 $W$ is the outcome, $~$ is distributed, $Binomial(N,p)$ is the distribution, and $p$ the prior. In conditional expression
 $$ Pr(W|N,p) = Binomial(W|N,p) $$
 $$ Pr(p) = Uniform(p|0,1) $$
+
+## Linear Generative Models
+
+```{r HowelData}
+data(Howell1)
+d <- Howell1 %>% subset(age > 18)
+d %>% 
+	ggplot(aes(x=height,y=weight)) +
+	geom_point()
+```
+
+As an example we will lok at height vs weight, with weigth being depednent on height, but not the other way around. The linear model is
+
+$$ y_i \sim Normal(\mu_i,\sigma) $$
+$$ \mu_i = \alpha + \beta x_i $$
+
+### Generative Model H -> W
+
+```{r HeightvsWeigth}
+alpha <- 0
+beta  <- 0.5 #kg/cm
+sigma <- 5
+n_individuals <- 100
+
+H  <- runif(n_individuals,130,170) #cm
+mu <- alpha + beta * H
+W  <- rnorm(n_individuals,mu,sigma)
+
+d_gen <- data.frame(height=H,weight=W)
+d_gen %>%
+	ggplot(aes(x=height,y=weight)) +
+	geom_point()
+```
+
+### Statistical Linear Model
+
+To fit we need priors
+$$ \alpha \sim Normal(0,1) $$
+$$ \beta  \sim Normal(0,1) $$
+$$ \sigma \sim Normal(0,1) $$
+
+1. It is useful to rescale variables
+	- Makes the simulation and priors easier as well as integration downstream
+	- $H_i -> H_i - \bar{H}$: $\alpha$ becomes average weight.
+2. Must think about priors
+
+Using this we set new priors
+$$ \alpha \sim Normal(60,10) $$
+$$ \beta \sim Normal(0,10) $$
+$$ \sigma \sim Normal(0,10) $$
+which all have huge variance, ie we want to learn these variables. In fact if we sample our priors we get really weird relationships between height and weight, we can switch $\beta$ to
+$$ \beta ~ LogNormal(0,1) $$
+which both always positive and favours smaller slopes, a basic biological constraint. We still want to have the prior cover all plausible possible fits for the type of data we are looking at and to only be constraind from outside data.
+
+For linear models, the prior doesn't really matter after a quite small sample set, however this is for practice in more complicated settings. In fact we will start determining priors from the data we are fitting!
+
+There is one small problem generating posterior distributions
+$$ P(\alpha,\beta,\sigma|W,H) \propto Normal(W|\mu,\sigma)Normal(\alpha|60,10)LogNormal(\beta|0,1)Normal(\sigma|0,10) $$
+it blows up in number of samples to uniformly sample it. 
+
+## Gaussian Approximation
+
+Posterior distributions are approximately Gaussian $\to$ Use Gaussian approximation (often called quadratic or laplace approximation)
+
+## Validation
+
+At a minimum take your simulated data, fit it using your methodology and check the output against your synthetic input data. Then run it on your data.
+
+
+## First law of Statistics
+
+**Resultant parameters are not independant!** Instead push out posterior predictions instead and describe/interpret those.
+
+```{r SimulatedData}
+alpha     <- 60
+beta      <- 0.5
+sigma     <- 5
+n_samples <- 1000
+
+h_min <- 120
+h_max <- 200	
+
+H  <- runif(n_samples,h_min,h_max)
+mu <- alpha + beta*(H-mean(H))
+W  <- rnorm(n_samples,mu,sigma)
+
+d_sim <- data.frame(height=H,weight=W)
+l_sim <- list(H=H, W=W, Hbar=mean(H))
+
+fit <- quap( alist( W ~ dnorm(mu,sigma)
+                  , mu <- a + b * (H-Hbar)
+                  , a     ~ dnorm(70,10)
+                  , b     ~ dlnorm(0,1)
+                  , sigma ~ dunif(0,10) )
+           , data=l_sim )
+
+
+
+hs <- seq(h_min,h_max,length.out=50)
+fit_data <- list(H=hs,Hbar=mean(H))
+mu <- link(fit,data=fit_data)
+mu_mean <- colMeans(mu)
+mu_ci <- apply(mu,2,quantile,probs=c(0.005,0.995))
+
+d_fit = data.frame(height=hs,weight_mean=mu_mean,weight_lower=mu_ci[1,],weight_upper=mu_ci[2,])
+
+W_sim  <- sim(fit,data=fit_data)
+W_mean <- colMeans(W_sim)
+W_ci   <- apply(W_sim,2,quantile,probs=c(0.005,0.995))
+
+d_sime = data.frame(height=hs,weight_mean=W_mean,weight_lower=W_ci[1,],weight_upper=W_ci[2,])
+
+p <- d_sim %>% 
+	ggplot(aes(x=height,y=weight)) +
+	geom_ribbon(aes(x=height,y=weight_mean,ymin=weight_lower,ymax=weight_upper), fill=ggthemes::tableau_color_pal()(3)[3], alpha=0.25, data=d_sime) +
+	geom_ribbon(aes(x=height,y=weight_mean,ymin=weight_lower,ymax=weight_upper), fill=ggthemes::tableau_color_pal()(2)[2], alpha=0.5, data=d_fit) +
+	geom_line(aes(x=height,y=weight_mean),colour=ggthemes::tableau_color_pal()(2)[2],data=d_fit) +
+	geom_point(colour=ggthemes::tableau_color_pal()(1)) +
+	xlab('Height (cm)') + ylab('Weight (kg)') +
+	xlim(h_min,h_max)
+p
+```
+
