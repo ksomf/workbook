@@ -259,7 +259,6 @@ ggplot(d) +
 3. Compute (assumed central) 89% percentile and HPDI intervals from (2).
 
 ```{r week01_q03, echo=TRUE}
-library(rethinking, quietly=TRUE)
 samples = sample( ps, prob=posterior, size=n_samples, replace=TRUE )
 c(HPDI(samples),PI(samples))
 ```

@@ -20,6 +20,7 @@ params:
 knitr::opts_chunk$set(echo=TRUE)
 
 library(ggplot2)
+library(rethinking, quietly=TRUE)
 library(tidyverse)
 ```
 
