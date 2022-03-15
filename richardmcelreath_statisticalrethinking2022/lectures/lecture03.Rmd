@@ -67,7 +67,7 @@ $$ \alpha \sim Normal(60,10) $$
 $$ \beta \sim Normal(0,10) $$
 $$ \sigma \sim Normal(0,10) $$
 which all have huge variance, ie we want to learn these variables. In fact if we sample our priors we get really weird relationships between height and weight, we can switch $\beta$ to
-$$ \beta ~ LogNormal(0,1) $$
+$$ \beta \sim LogNormal(0,1) $$
 which both always positive and favours smaller slopes, a basic biological constraint. We still want to have the prior cover all plausible possible fits for the type of data we are looking at and to only be constraind from outside data.
 
 For linear models, the prior doesn't really matter after a quite small sample set, however this is for practice in more complicated settings. In fact we will start determining priors from the data we are fitting!

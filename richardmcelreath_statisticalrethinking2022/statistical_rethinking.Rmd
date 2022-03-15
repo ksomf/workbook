@@ -24,13 +24,19 @@ library(rethinking, quietly=TRUE)
 library(tidyverse)
 ```
 
-```{r introduction, child = if(params$chapters == 'all') 'lectures/introduction' }
+```{r introduction, child = if(params$chapters == 'all') 'lectures/introduction.Rmd' }
 ```
 
 ```{r lecture01, child = if(params$chapters == 'all') 'lectures/lecture01.Rmd' }
 ```
 
 ```{r lecture02, child = if(params$chapters == 'all') 'lectures/lecture02.Rmd' }
+```
+
+```{r lecture03, child = if(params$chapters == 'all') 'lectures/lecture03.Rmd' }
+```
+
+```{r lecture04, child = if(params$chapters == 'all') 'lectures/lecture04.Rmd' }
 ```
 
 ```{r chapter, child = if(params$chapters != 'all') params$chapters }

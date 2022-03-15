@@ -1,0 +1,277 @@
+# Lecture 4: Categorical variables and curve/spline fitting
+
+## Categorical Variables
+
+There are two equivalent ways of defining categorical variables; through dummy variables or through index variables. The latter is more easily implemented and also applicable to multi level models. Another advantage of index variables is ease of inclusion of additional categories. They work by assigning a number to each category. For instance:
+$$ W \sim Normal(\mu_i,\sigma) $$
+$$ \mu_i = \alpha_{S[i]} $$
+for $S=[\alpha_1,\alpha_2]$.
+
+We can apply this to the height data incorporating sex.
+
+```{r L04BasicCategorical}
+data("Howell1")
+d = Howell1 %>% subset(age >= 18)
+
+dat = list(W=d$weight, S=d$male+1)
+cat_map = c('female','male')
+
+m_SW = quap(
+	alist(
+		W ~ dnorm(mu,sigma),
+		mu <- a[S],
+		a[S] ~ dnorm(60,10),
+		sigma ~ dunif(0,10)
+	),
+	data=dat
+)
+```
+
+The posterior predictions can be constructed in the same way as before.
+
+```{r L04PosteriorMean}
+post = extract.samples(m_SW) %>% 
+	as.data.frame()
+post_longer = post %>% 
+	pivot_longer(-sigma,names_to='sex',names_prefix='a.',values_to='weight') %>%
+	mutate(sex=factor(sex,levels=c(1,2),labels=c('female','male')))
+
+post_longer %>% ggplot(aes(x=weight,colour=sex)) +
+	geom_density() +
+	xlab('Posterior mean distribution (kg)')
+```
+
+However there is a distinction, we also have difference in distribution.
+
+```{r L04Posterior}
+n_samples = 1000
+post2 = data.frame(W.1=rnorm(n_samples,post$a.1,post$sigma)
+				  ,W.2=rnorm(n_samples,post$a.2,post$sigma))
+post2_longer = post2 %>% 
+	pivot_longer(everything(),names_to='sex',names_prefix='W.',values_to='weight') %>%
+	mutate(sex=factor(sex,levels=c(1,2),labels=c('female','male')))
+
+post2_longer %>% ggplot(aes(x=weight,colour=sex)) +
+	geom_density() +
+	xlab('Posterior distribution (kg)')
+```
+
+Which one must compare using contrast.
+
+```{r L04Contrast}
+post_contrast = (post2$W.2 - post2$W.1) %>% 
+	density() %>%
+	(function(x) data_frame(dW=x$x,density=x$y)) %>%
+	mutate(colour=if_else(dW>0,'white','black'))
+labels = post_contrast %>%
+	group_by(colour) %>%
+	summarise(x=weighted.mean(dW,density),label=sum(density)) %>%
+	mutate(y=approx(post_contrast$dW,post_contrast$density,x)$y/2
+		  ,label=paste0(round(label/sum(label)*100,digits=1),'%'))
+	
+post_contrast %>% 
+	ggplot(aes(x=dW,y=density)) +
+	geom_line() +
+	geom_area(data=filter(post_contrast,dW>0),fill='black') +
+	geom_text(aes(x=x,y=y,colour=colour,label=label),data=labels) +
+	scale_colour_manual(values=labels$colour) +
+	xlab('Posterior contrast distribution (Male-Female) (kg)') +
+	theme(legend.position="none")
+```
+## Adding Regression
+
+```{r L04CategoricalRegression}
+data("Howell1")
+d = Howell1 %>% subset(age >= 18)
+
+datr = list(W=d$weight, H=d$height,  Hbar=mean(d$height), S=d$male+1)
+cat_map = c('female','male')
+
+m_SHW = quap(
+	alist(
+		W ~ dnorm(mu,sigma),
+		mu <- a[S] + b[S]*(H-Hbar),
+		a[S] ~ dnorm(60,10),
+		b[S] ~ dlnorm(0,1),
+		sigma ~ dunif(0,10)
+	),
+	data=datr
+)
+```
+
+The contrast for weight to height would then look like
+
+```{r L04CategoricalRegressionContrast}
+hs = seq(from=min(d$height),to=max(d$height),len=100)
+
+w_f = link(fit=m_SHW,data=list(S=rep_along(hs,1),H=hs,Hbar=mean(d$height)))
+w_m = link(fit=m_SHW,data=list(S=rep_along(hs,2),H=hs,Hbar=mean(d$height)))
+w_c = w_m - w_f
+
+intervals = seq(from=0.5,to=0.99,len=10) %>%
+	map_dfr(~apply(w_c,2,PI,prob=.x) %>% 
+				t %>% 
+				as_tibble() %>% 
+				set_names(c('ymin','ymax')) %>% 
+				mutate(hs=hs),.id='i')
+
+ggplot(intervals,aes(x=hs,ymin=ymin,ymax=ymax,group=i)) +
+	geom_ribbon(alpha=0.1) +
+	xlab('Height (cm)') +
+	ylab('Weight contrast (Male-Female) (kg)')
+```
+
+## The full Bayes
+
+```{r L04FullCategoricalRegression}
+data("Howell1")
+d = Howell1 %>% subset(age >= 18)
+
+datf = list(W=d$weight, H=d$height,  Hbar=mean(d$height), S=d$male+1)
+cat_map = c('female','male')
+
+m_SHW_full = quap(
+	alist(
+		W ~ dnorm(mu,sigma),
+		mu <- a[S] + b[S]*(H-Hbar),
+		a[S] ~ dnorm(60,10),
+		b[S] ~ dlnorm(0,1),
+		sigma ~ dunif(0,10),
+		
+		H ~ dnorm(nu,tau),
+		nu <- h[S],
+		h[S] ~ dnorm(160,10),
+		tau ~ dunif(0,10)
+	),
+	data=datf
+)
+precis(m_SHW_full,depth=2)
+
+HW_sim = sim(m_SHW_full,data=list(S=c(1,2),Hbar=datf$Hbar),vars=c('H','W'))
+```
+
+
+# Week 2 Homework
+
+1. Construct a linear regression of weight as predicted by height, using the adults (age 18 or greater) from the Howell1 dataset. The heights listed below were recorded in the !Kung census, but weights were not recorded for these individuals. Provide predicted weights and 89% compatibility intervals for each of these individuals. That is, fill in the table below, using model-based predictions.
+
+```{r H02Q1}
+n_samples = 1e4
+q1 = tibble(height=c(140,160,175))
+
+data("Howell1")
+d = Howell1 %>% subset(age >= 18)
+
+datq1 = list(W=d$weight, H=d$height,  Hbar=mean(d$height))
+
+m_HW = quap(
+	alist(
+		W ~ dnorm(mu,sigma),
+		mu <- a + b*(H-Hbar),
+		a ~ dnorm(60,10),
+		b ~ dlnorm(0,1),
+		sigma ~ dunif(0,10)
+	),
+	data=datq1
+)
+
+q1_sim = sim(m_HW,data=list(H=q1$height,Hbar=datf$Hbar),vars=c('W'))
+q1$pw = apply(q1_sim,2,mean)
+q1 = cbind(q1,t(apply(q1_sim,2,PI)))
+knitr::kable(q1)
+```
+
+2. From the Howell1 dataset,consider only the people younger than 13 years old. Estimate the causal association between age and weight. Assume that age influences weight through two paths. First, age influences height, and height influences weight. Second, age directly influences weight through age- related changes in muscle growth and body proportions.
+
+$$ 	\begin{aligned} 
+W &\sim Normal(\mu,\sigma) \\
+\mu &= \alpha + \beta A \\
+\alpha &\sim Normal(60,10) \\
+\beta &\sim LogNormal(0,1) \\
+\sigma &\sim Uniform(0,10)
+\end{aligned}$$
+
+```{r H02Q2}
+data("Howell1")
+d = Howell1 %>% subset(age < 13)
+
+datq2 = list(W=d$weight, A=d$age)
+cat_map = c('female','male')
+
+m_q2 = quap(
+	alist(
+		W ~ dnorm(mu,sigma),
+		mu <- a + b*A,
+		a ~ dnorm(4,2),
+		b ~ dlnorm(0,1),
+		sigma ~ dunif(0,10)
+	),
+	data=datq2
+)
+precis(m_q2)
+```
+
+3. Effect of sex on weight
+$$ 	\begin{aligned} 
+W &\sim Normal(\mu,\sigma) \\
+\mu &= \alpha_{S[i]} + \beta_{S[i]} A \\
+\alpha_{S[i]} &\sim Normal(60,10) \\
+\beta_{S[i]} &\sim LogNormal(0,1) \\
+\sigma &\sim Uniform(0,10) \\
+S &= [male,female]
+\end{aligned}$$
+
+```{r H02Q3}
+data("Howell1")
+d = Howell1 %>% subset(age < 13)
+
+datq3 = list(W=d$weight, A=d$age,S=d$male+1)
+cat_map = c('female','male')
+
+m_q3 = quap(
+	alist(
+		W ~ dnorm(mu,sigma),
+		mu <- a[S] + b[S]*A,
+		a[S] ~ dnorm(4,2),
+		b[S] ~ dlnorm(0,1),
+		sigma ~ dunif(0,10)
+	),
+	data=datq3
+)
+precis(m_q3,depth=2)
+
+as = seq(from=min(d$age),to=max(d$age),len=100)
+
+w_f = link(fit=m_q3,data=list(S=rep_along(hs,1),A=as))
+w_m = link(fit=m_q3,data=list(S=rep_along(hs,2),A=as))
+w_c = w_m - w_f
+
+intervals = seq(from=0.5,to=0.99,len=10) %>%
+	map_dfr(~apply(w_c,2,PI,prob=.x) %>% 
+				t %>% 
+				as_tibble() %>% 
+				set_names(c('ymin','ymax')) %>% 
+				mutate(hs=hs),.id='i')
+
+ggplot(intervals,aes(x=hs,ymin=ymin,ymax=ymax,group=i)) +
+	geom_ribbon(alpha=0.1) +
+	xlab('Height (cm)') +
+	ylab('Mean weight contrast (Male-Female) (kg)')
+
+w_f = sim(fit=m_q3,data=list(S=rep_along(hs,1),A=as))
+w_m = sim(fit=m_q3,data=list(S=rep_along(hs,2),A=as))
+w_c = w_m - w_f
+
+intervals = seq(from=0.5,to=0.99,len=10) %>%
+	map_dfr(~apply(w_c,2,PI,prob=.x) %>% 
+				t %>% 
+				as_tibble() %>% 
+				set_names(c('ymin','ymax')) %>% 
+				mutate(hs=hs),.id='i')
+
+ggplot(intervals,aes(x=hs,ymin=ymin,ymax=ymax,group=i)) +
+	geom_ribbon(alpha=0.1) +
+	xlab('Height (cm)') +
+	ylab('Weight contrast (Male-Female) (kg)')
+```
+
