@@ -1,0 +1,37 @@
+# Lecture 5: Elemental Confounds
+
+## Fork
+
+\begin{tikzcd}
+A & B \arrow[l] \arrow[r] & C
+\end{tikzcd}
+
+- Causes **phantom** association between $A$ and $C$
+- Stratification by $B$ **removes** this association
+
+## Pipe
+
+\begin{tikzcd}
+A \arrow[r] & B  \arrow[r] & C
+\end{tikzcd}
+
+- Causes **indirect** association between $A$ and $C$
+- Stratification by $B$ **removes** this association
+
+## Collider
+
+\begin{tikzcd}
+A \arrow[r] & B   & C \arrow[l]
+\end{tikzcd}
+
+- **No** association between $A$ and $C$
+- Stratification by $B$ **causes** association
+
+## Descendant
+
+\begin{tikzcd}
+A & B \arrow[l] \arrow[r] \arrow[d] & C \\
+  & D &
+\end{tikzcd}
+
+- $D$ inherits whatever association $B$ is subject to
