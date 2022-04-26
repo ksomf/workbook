@@ -1,0 +1,147 @@
+# Lecture 6: Good and Bad Controls
+
+So what if we have a more problematic problem. What if we wanted to know the direct effect of a grandparents education on a child, where parent and child share an unobserved confound.
+
+
+\begin{tikzcd}
+G \arrow[r] \arrow[dr] & P \arrow[d] & U \arrow[l] \arrow[dl] \\
+                       & C           &
+\end{tikzcd}
+
+Stratefying by parent would lead to removal of $G$ through $P$ but introduce association through the collider on $P$. Of course it depends on the confounding strength, the bias might not be that important, so it is a tradeoff.
+
+## The Process
+
+1. Clearly state assumptions
+2. Determine logical consequences
+3. Test
+
+By not being 'clever', and instead using simple deductions the model can be understood, and most importantly verify and challenge your work.
+
+## Randomisation
+
+If we perform randomisation, that is control for any effects on a variable, then we can remove links. For instance on
+
+\begin{tikzcd}
+A \arrow[d] \arrow[dr] \\
+B \arrow[r] & C
+\end{tikzcd}
+
+if we randomise on $B$ we get left with
+
+\begin{tikzcd}
+A \arrow[dr] \\
+B \arrow[r] & C
+\end{tikzcd}
+
+## Do Calculus
+So how do we do this in general?
+
+$$ P(C|do(B)) = \sum_A P(C|B,A)P(A) $$
+
+So stratification on $B$ and $A$ and then averaged over $A$ will give us the pure effect.
+
+### Cheetah, Baboon, Gazelle System
+
+
+\begin{tikzcd}
+C \arrow[dr] \\
+B \arrow[r] & G
+\end{tikzcd}
+
+In such a simple system where Baboons only eat Gazelles if no Cheetahs are present, we need to know the distribution of Cheetahs to determine the total effect of Baboons on Gazelles. To determine how to get this use do-calculus, which has the advantage of being a-priori to the funcational fits. If inference is possible just from do-calculus, then it is possible without any assumptions; so it is the preffered place to be. However the power of inference possible is often greater after assumptions, but the assumptions must be true.
+
+### Backdoor Criterion
+
+To find variables to stratify to yield 
+$$ P(Y|do(X)) $$
+we:
+
+1. Idetify all paths linking $X \to Y$
+2. Take the subset entering $X$ (Backdoor Paths)
+3. Find adjustment sets that close the backdoor paths
+
+#### Example 1
+
+\begin{tikzcd}
+& Z \arrow[dr] \\
+X \arrow[ur] \arrow[rr] \arrow[dr] && Y \arrow[dl] \\
+& C
+\end{tikzcd}
+
+We have $3$ paths here from $X \to Y$, and need to adjust nothing.
+
+#### Example 2
+
+\begin{tikzcd}
+A \arrow[d] \arrow[r] & Z \arrow[dl] \arrow[dr] & B \arrow[l] \arrow[d] \\
+X \arrow[rr]  && Y \arrow[dl] \\
+& C \arrow[ul]
+\end{tikzcd}
+
+but want
+	
+\begin{tikzcd}
+A  \arrow[r] & Z  & B \arrow[l] \arrow[d] \\
+X \arrow[ur] \arrow[rr]  && Y \arrow[dl] \\
+& C
+\end{tikzcd}
+
+There are six paths, one of which $X \to A \to Z \to B \to Y$ which will open if we stratify by $Z$. In the end we condition by $C$ and $Z$ but then also on either $A$ or $B$, with $B$ being the best choice.
+
+## Good and Bad Controls
+
+Additionally looking at the course recommended paper [@Cinelli2022].
+
+One of the worst case offenders for bad controls is the 'm-bias'
+
+\begin{tikzcd}
+u \arrow[d] \arrow[r] & Z & v \arrow[l] \arrow[d] \\
+X \arrow[rr] && Y
+\end{tikzcd}
+
+Stratification on $Z$ will open a path $X \to u \to Z \to v \to Y$
+
+### Case Control Bias
+
+\begin{tikzcd}
+X \arrow[r] & Y \arrow[r] & Z
+\end{tikzcd}
+
+Do not control $Z$; you will reduce available variance for $X \to Y$ through reduced variance in $Y$, the parts not explained by $Z$. Remember that the statisticatal inference does not know the difference between causal and non-causal relaitionships.
+
+### Precision Parasite
+
+\begin{tikzcd}
+Z \arrow[r] & X \arrow[r] & Y
+\end{tikzcd}
+
+Again do no control for $Z$; you will still get the correct mean, but the variance is increased.
+
+### Bias Amplification
+
+\begin{tikzcd}
+Z \arrow[d] & u \arrow[dl] \arrow[dr] \\
+X \arrow[rr] && Y
+\end{tikzcd}
+
+If you control for $Z$, everything gets worse, the bias from $u$ is increased.
+
+## Table 2 Fallacy
+
+Example taken from [@Westreich2013]]
+
+\begin{tikzcd}
+Smoking \arrow[dr] \arrow[drrr] \\
+& HIV \arrow[rr] && Stroke \\
+Age \arrow[uu] \arrow[ur] \arrow[urrr]
+\end{tikzcd}
+
+If we control all of the causal variables for our outcome, the coefficients for a fully linear model becomes
+
+$$ Normal(\alpha + \beta_{H} H + \beta_{S} S + \beta_A A, \sigma) $$
+
+which closes all three backdoor paths. Then by marginalising over age and smoking, we can get the direct effect. From the perspective of $S$, the same regression is sratified on $X$, giving only the direct effect $S \to Stroke$. Simalarily for age, two pathways are closed, only getting the direct effects. This means that the coefficients in a table of this fit mean different things, and on it's own is useless. So what can we do?
+
+1. Only provide non-control, marginalised as appropriate
+2. Provide interpretation explicitly of all the coefficients

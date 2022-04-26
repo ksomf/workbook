@@ -9,6 +9,7 @@ A & B \arrow[l] \arrow[r] & C
 - Causes **phantom** association between $A$ and $C$
 - Stratification by $B$ **removes** this association
 - $A\: \cancel{\Perp}\: B$ and $A \Perp{} B \:|\: C$
+- Also known as a 'common cause'
 
 ## Pipe
 
@@ -19,6 +20,7 @@ A \arrow[r] & B  \arrow[r] & C
 - Causes **indirect** association between $A$ and $C$
 - Stratification by $B$ **removes** this association
 - $A\:\cancel{\Perp}\: B$ and $A \Perp{} B \:|\: C$
+- Also known as a 'chain' or 'mediator'
 
 ## Collider
 
@@ -29,6 +31,7 @@ A \arrow[r] & B   & C \arrow[l]
 - **No** association between $A$ and $C$
 - Stratification by $B$ **causes** association
 - $A \Perp{} B$ and $A\:\cancel{\Perp}\: B \:|\: C$
+- Also known as a 'collider'
 
 ## Descendant
 
