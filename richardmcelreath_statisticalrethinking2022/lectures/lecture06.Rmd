@@ -145,3 +145,88 @@ which closes all three backdoor paths. Then by marginalising over age and smokin
 
 1. Only provide non-control, marginalised as appropriate
 2. Provide interpretation explicitly of all the coefficients
+
+# Week 3 Homework
+
+## Urban Foxes
+
+We have the following model for measurements
+
+\begin{tikzcd}
+& A \arrow[dl] \\
+F \arrow[rr] \arrow[dr] && G \arrow[dl] \\
+& W
+\end{tikzcd}
+
+between Area, Food (average), Groupsize, and Weight.
+
+```{r wk03fox}
+library(rethinking, quietly=TRUE)
+library(tidyverse, quietly=TRUE)
+data(foxes)
+
+foxes <- foxes %>% 
+	mutate(across(-any_of('group'),standardize)) %>% 
+	rename(F=avgfood, G=groupsize, A=area, W=weight)
+```
+
+### Q1: Determine $A \to F$
+
+```{r wk03q01}
+atog <- quap(
+	alist(
+		F ~ dnorm( mu, sigma ),
+		mu <- a + bA * A,
+		a ~ dnorm(0,0.3),
+		bA ~ dnorm(0,0.6),
+		sigma ~ dexp(1)
+	), 
+	data=foxes
+)
+precis(atog)
+```
+A: Very linear increase.
+
+### Q2: Total and Direct $F \to W$
+
+```{r wk03q02full}
+ftow_full <- quap(
+	alist(
+		W~ dnorm( mu, sigma ),
+		mu <- a + bF * F,
+		a ~ dnorm(0,0.3),
+		bF ~ dnorm(0,0.6),
+		sigma ~ dexp(1)
+	), 
+	data=foxes
+)
+precis(ftow_full)
+```
+
+Need to close $G$ pipe.
+```{r wk03q02dirct}
+ftow_direct <- quap(
+	alist(
+		W~ dnorm( mu, sigma ),
+		mu <- a + bF * F + bG * G,
+		a ~ dnorm(0,0.3),
+		bF ~ dnorm(0,0.6),
+		bG ~ dnorm(0,0.6),
+		sigma ~ dexp(1)
+	), 
+	data=foxes
+)
+precis(ftow_direct, depth=2)
+```
+
+Looks like constant wolves per average food. This might be a response measure as a consequence of having additional food supply (an intervention on area), the group gets larger. Other interpretations would change the causal nature of our model, group size intervention might affect the area the group has.
+
+### Q3 Table 2 Fallacy with unobserved variables
+
+\begin{tikzcd}
+S \arrow[dr] \arrow[drrr] && u \arrow[ll] \arrow[d] \\
+& X \arrow[rr] && Y \\
+A \arrow[uu] \arrow[ur] \arrow[urrr]
+\end{tikzcd}
+
+The two backdoors will be closed by stratifying on $S$ and $A$. This will cause a collider through $S$ to open up, but that doesn't involve $X$. The interpretation of the other variables are now affected by $u$, which means that they no longer correspond to the direct effects as they did in the model without the unobserved variable.

@@ -216,7 +216,7 @@ d %>%
 	labs(title=paste0(w,' wins in ',size,' samples posterior predictive'))
 ```
 
-# Week01 Homework
+# Week 1 Homework
 
 1. Suppose the globe toss data had been 4 water, 11 land. Construct the posterior distribution (using grid approximation) with flat prior.
 
