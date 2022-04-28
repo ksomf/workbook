@@ -224,7 +224,7 @@ Looks like constant wolves per average food. This might be a response measure as
 ### Q3 Table 2 Fallacy with unobserved variables
 
 \begin{tikzcd}
-S \arrow[dr] \arrow[drrr] && u \arrow[ll] \arrow[d] \\
+S \arrow[dr] \arrow[drrr] &&& u \arrow[lll] \arrow[d] \\
 & X \arrow[rr] && Y \\
 A \arrow[uu] \arrow[ur] \arrow[urrr]
 \end{tikzcd}
