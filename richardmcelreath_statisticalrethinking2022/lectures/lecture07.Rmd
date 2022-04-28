@@ -1,0 +1,50 @@
+# Overfitting
+
+Again stress the difference between predictions and causal; description of the points and explain the points.
+
+- It is very possible to get good predictions about what further observations would yield. Even if we do not properly understand the causes.
+
+## Leave-one-out Cross-validation
+
+Take the $L^2$ sum of differences between fit prediction with each point in turn taken out of the fit. Then compare this to the same distances for the full fit.This gives us an understanding of how over/underfit our model is based on degree of freedom.
+
+### Log Pointwise Predictive Density (LPPD)
+
+$$ lppd_{CV} = \sum_i^N \frac{1}{S} \sum_s^S \log{Pr(y_i|\theta_{-i,s})} $$
+
+for $N$ data points and $S$ samples of the posterior. We log for stability due tohardware represetations for our models.
+
+## Regularisation
+
+Cross-validation does not handle overfitting, it just improves choices between their model, not the model itself.
+
+From one perspective overfitting can come from the parametric structure and also the prior. The priors determine flexibility of your models, **skeptical priors** are restricted priors that reduce the space your model can explore. Beware of underfitting with to restricted priors, but in general priors are more restricted than you would naievly think they are.
+
+So how do we tune our priors, well that depends on what we are doing.
+
+- For pure prediction, tune using your data
+- For causal inference, use a priori from science knowledge
+
+In reality there would be a mix of causal and prediction in the model. Remember no prior is perfect, you need to only be better than the unconstraining prior.
+
+## Importance Sampling
+
+Well doing this leave one out fitting can get expensive fast so we use importance sampling to work on it post fit. The key take-away is that any data point with now prabability according to the model has a larger affect on the model fit than a typical point. Another way of thinking about this is that removing an outlier from a fit changes the posterior the most.
+
+Naive importance sampling can have unreliable results, so instead we will use (one of many), Pareto-improved importance sampling (PSIS).
+
+Altenatively is to use widely applicable information criteria (WAIC)
+$$ WAIC(y,\Theta) = -2(lppd - \sum_i var_\Theta \log Pr(y_i|\Theta) $$
+
+The sum is the penalty term and in perfect normal land is just the degrees of freedom.
+
+Both PSIS and WAIC perform remarkably similar, mut the former also has automated diagnostic checks.
+
+## Model Mis-selection
+
+Neither of these things address anything about causal inference. They prefer confounds and colliders!
+
+## Outliers
+
+Dropping outliers is bad; does not improve prediction. This is often due to differing distributions in different data points based on unmeasured parameters. By fitting to a student-t distrobution, which is a squished down gaussian, with larger tails. This is in effect fitting with multiple gaussians in aggregate, and can improve the precision of your fit.
+
