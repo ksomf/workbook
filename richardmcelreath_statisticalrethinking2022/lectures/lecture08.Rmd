@@ -1,0 +1,43 @@
+# Markov Chain Monte Carlo
+
+To drawing the Baysian owl, if your response 'Just Analyse the data' is a bit sarcastic, your fairly justified. In simple cases we can just reason forms for the solutions, but life isn't simple. Lots of problems aren't multi variate Gaussians, so we need to expand our repetoir.
+
+While MCMC is computatinally intensive, it has way more flexible. We can visit each parameter in proportion to it's probability, thus mapping through arbitrary parameter space. Need to only know relative probability of two spots at a time for the next step.
+
+Metropolis was the first MCMC alogrithm but now gradient based methods are more in use, instead for instance Hamiltonian MC, so trajectories using pseudo momentum and potential to get weighted samples. So you need the derivatives of your parameters, or nearby points to estimate them.
+
+## Auto-diff
+
+Automatically calculates derivatives from your statistical model for your gradient model giving you the Jacobian. STAN math libraries to the rescue.
+
+## STAN Code
+
+- TODO: add stancode(x) output from homework
+
+## MC Owl
+
+Due to the long research diagnostics are well matured.
+
+### Trace Plot
+
+Plots timeline of each parameter as a timeline, to see whether parameter space was sampled nicely. Ie. no drifting or long term trend evident. To really test this use multiple independent chains and ensure they converge to the same distrobution, and this is trivially possible. We then layer the trajectories on the same trace plot.
+
+### Trace Rank Plot
+
+Instead of parameter value use the rank instead. This shows whether any chain is on top of any others.
+
+### $\hat{R}$
+
+The ratio of variance in chain against total variance. Good chains' variance ends up as the whole variance in the chain. Large values are bad and close to $1$ is good.
+
+### $n_{eff}$
+
+Takes account the autocorrelation, a read out of the effectiveness of your stepsize.
+
+### Divergent Transitions
+
+While HMC makes good proposal, if the discrete simulation parameters add enough error, some proposals will still need to be rejected.
+
+## The Folk Theorem of Statistical Computing
+
+'When you have computational problems, often there's a problem with your model' - Andrew Gelman
