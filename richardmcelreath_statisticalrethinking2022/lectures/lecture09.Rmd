@@ -1,0 +1,114 @@
+# Modelling Events
+
+The learning example is influence of admission rates, with per department data. This leads to a very common basic mediating pathway:
+
+\begin{tikzcd}
+& D \arrow[dr] \\
+G \arrow[ur] \arrow[rr] && A
+\end{tikzcd}
+
+Remember again the data itself does not contain any of the causes, so in these discrimination based research is difficult and requires carefull work.
+
+## Types of Discrimination
+
+In the literature we divide direct discrimination
+
+- **Status Based (statistical) Discrimination:** Not direct against knowledge of the category being discriminated
+- **Taste Based Discrimination:** Direct causal effect from category
+
+Then the mediating paths are indirect discriminations; **structual discrimination**. In our example even if each department has equal admission rates on gender, overall there could still be total discrimination.
+
+## GLM
+
+Switching from a linear model to generalised linear models we go from
+
+$$ \begin{aligned}
+Y_i   &\sim Normal(\mu_i,\sigma) \\
+\mu_i &= \alpha + \beta_X X_i + \beta_Y Y_i
+\end{aligned} $$
+
+to
+
+$$ \begin{aligned}
+Y_i   &\sim Bernoulli(p_i,\sigma) \\
+f(p_i) &= \alpha + \beta_X X_i + \beta_Y Y_i
+\end{aligned} $$
+
+with some function $f$; the link function. So we can use this to restrict the probability to $[0,1]$. Then
+
+$$ p_i = f^{-1}(\alpha + \beta_X X_i + \beta_Y Y_i) $$
+
+### Logit Link
+
+Arrissing naturally from normal distributions, the logit function is way of mapping $[0,1]$ to $\mathbb{R}$ without distortion. The logit function is just the log odds
+
+$$ logit(p_i) = \log \frac{p_i}{1-p_i} $$
+
+which has the logistics function as inverse
+
+$$ logit^{-1}(q_i) = \frac{e^{q_i}}{1+e^{q_i}} $$
+
+In practice this works really well, which is the real reason we use it. It is then fairely easy to read log odd values as really $logit(6) \approx 1$ and $logit(0) = 0.5$.
+
+```{r logit}
+x_bound <- 6
+df   <- data.frame( x=seq(-x_bound,x_bound,length.out=1e6) )
+df$y <- inv_logit(df$x)
+
+ggplot(df) + geom_line(aes(x=x,y=y),colour=ggthemes::tableau_color_pal()(1))
+```
+
+Now the question arises as to good priors starting from the simplest case, constant value.
+
+```{r LogitPrior}
+samples <- 1e6
+sigmas <- c(10,1.5,1)
+df <- map_dfr(set_names(sigmas,sigmas), function(s) data.frame(x=rnorm(samples,sd=s)), .id='sigma') %>% 
+	mutate(inv = inv_logit(x))
+
+ggplot(df,aes(x=x)) +
+	geom_density(colour=ggthemes::tableau_color_pal()(1)) +
+	facet_grid(~sigma) +
+	xlim(-25,25)
+
+ggplot(df,aes(x=inv)) +
+	geom_density(colour=ggthemes::tableau_color_pal()(1)) +
+	facet_grid(~sigma)
+```
+So a reasonable flat distribution is $\sigma = 1.5$ and a distribution that emphasizes non extreme values $\sigma = 1$. Of course the large sigma strongly favours extreme results.
+
+### Stan matrix notation
+
+```{r StanMatrixNotation, eval=FALSE}
+alist(
+	A ~ bernoulli(p),
+	logit(p) <- a[G,D],
+	matrix[G,D]:a ~ normal(0,1)
+)
+```
+
+### Binomial Regression
+
+Depending on data structure the equiavlent binmial regression to
+
+$$ \begin{aligned}
+A_i        &\sim Bernoulli(p_i) \\
+logit(p_i) &= \alpha[G_i,D_i]
+\end{aligned} $$
+
+is
+
+$$ \begin{aligned}
+A_i        &\sim Binomial(N_i,p_i) \\
+logit(p_i) &= \alpha[G_i,D_i]
+\end{aligned} $$
+
+moving $[0,1] \to [0 ... N]$.
+
+### Marginal Causal Effect
+
+Now beware, when we perform an intervention on gender, we are really changing the percieved gender $G \to P \to A$. This can have subtle implications on what the question we are actually answering.
+
+### Beware
+
+Discrimination effects can hide in all sorts of places, for instance from the department choice itself; here be confounds.

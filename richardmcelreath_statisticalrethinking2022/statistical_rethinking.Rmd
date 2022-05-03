@@ -51,6 +51,9 @@ library(tidyverse)
 ```{r lecture08, child = if(params$chapters == 'all') 'lectures/lecture08.Rmd' }
 ```
 
+```{r lecture09, child = if(params$chapters == 'all') 'lectures/lecture09.Rmd' }
+```
+
 ```{r chapter, child = if(params$chapters != 'all') params$chapters }
 ```
 
