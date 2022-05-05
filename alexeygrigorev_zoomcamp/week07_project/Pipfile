@@ -13,6 +13,7 @@ xgboost = "*"
 
 [dev-packages]
 awsebcli = "*"
+jupyter = "*"
 
 [requires]
 python_version = "3.8"
