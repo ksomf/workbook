@@ -131,3 +131,4 @@ dmypy.json
 alexeygrigorev_zoomcamp/capstone_marking/
 .Rproj.user
 .Rhistory
+.DS_Store
