@@ -45,7 +45,7 @@ So stratification on $B$ and $A$ and then averaged over $A$ will give us the pur
 
 
 \begin{tikzcd}
-C \arrow[dr] \\
+C \arrow[dr] \arrow[d] \\
 B \arrow[r] & G
 \end{tikzcd}
 
