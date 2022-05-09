@@ -161,8 +161,6 @@ F \arrow[rr] \arrow[dr] && G \arrow[dl] \\
 between Area, Food (average), Groupsize, and Weight.
 
 ```{r wk03fox}
-library(rethinking, quietly=TRUE)
-library(tidyverse, quietly=TRUE)
 data(foxes)
 
 foxes <- foxes %>% 

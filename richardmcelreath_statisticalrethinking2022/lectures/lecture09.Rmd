@@ -114,3 +114,149 @@ Now beware, when we perform an intervention on gender, we are really changing th
 Discrimination effects can hide in all sorts of places, for instance from the department choice itself; here be confounds.
 
 # Week 4 Homework
+
+## Q1: Marriage Age and Happiness
+
+\begin{tikzcd}
+& A \arrow[dr] \arrow[dl] \\
+M \arrow[rr] && H
+\end{tikzcd}
+
+```{r MarriageDataLoad}
+library(cmdstanr)
+df <- sim_happiness() %>% 
+	subset(age >= 18) %>% 
+	mutate( M = married + 1
+		  , A = (age-18)/(max(age)-18)
+		  , H = happiness )
+```
+
+```{r MarriageModel1} 
+a6.9 <- alist( H ~ dnorm(mu,sigma)
+	         , mu <- a[M] + bA * A
+	         , a[M]  ~ dnorm(0,1)
+	         , bA    ~ dnorm(0,2)
+	         , sigma ~ dexp(1) )
+m6.9m <- ulam(a6.9, data=df, chains=4, cores=2)
+m6.9q <- quap(a6.9, data=df)
+precis(m6.9m,depth=2)
+traceplot_ulam(m6.9m)
+trankplot(m6.9m)
+```
+
+```{r MarriageModel2}
+a6.10 <- alist( H ~ dnorm(mu,sigma)
+		      , mu <- a + bA * A
+		      , a     ~ dnorm(0,1)
+		      , bA    ~ dnorm(0,2)
+		      , sigma ~ dexp(1) )
+m6.10m <- ulam(a6.10, data=df, chains=4, cores=2)
+m6.10q <- quap(a6.10, data=df)
+precis(m6.10m,depth=2)
+traceplot_ulam(m6.10m)
+trankplot(m6.10m)
+```
+```{r MarriageModelComparison}
+compare(m6.9q, m6.10q, func=WAIC)
+compare(m6.9q, m6.10q, func=PSIS)
+```
+
+Answer WAIC and PSIS both say that the first model is better, but it is clear from the DAG that stratification on age opens a non causal path through age.
+
+## Q2: Urban Foxes Revisited
+
+```{r FoxesMk2}
+data(foxes)
+
+foxes <- foxes %>% 
+	mutate(across(-any_of('group'),standardize)) %>% 
+	rename(F=avgfood, G=groupsize, A=area, W=weight)
+
+ftow_full <- quap(
+	alist(
+		W~ dnorm( mu, sigma ),
+		mu <- a + bF * F,
+		a ~ dnorm(0,0.3),
+		bF ~ dnorm(0,0.6),
+		sigma ~ dexp(1)
+	), 
+	data=foxes
+)
+ftow_direct <- quap(
+	alist(
+		W~ dnorm( mu, sigma ),
+		mu <- a + bF * F + bG * G,
+		a ~ dnorm(0,0.3),
+		bF ~ dnorm(0,0.6),
+		bG ~ dnorm(0,0.6),
+		sigma ~ dexp(1)
+	), 
+	data=foxes
+)
+
+compare(ftow_full, ftow_direct, func=WAIC)
+compare(ftow_full, ftow_direct, func=PSIS)
+```
+
+There is no real difference between the two, but $a$ represents the normal weight for the wolf, and $\beta_F$ the total change in weight from a hypothetical intervention on food.
+
+## Q3: Cherry Blossom Precition
+
+
+\begin{tikzcd}
+Y \arrow[r] & T \arrow[r] & D
+\end{tikzcd}
+
+```{r CherryBlossomWrangling}
+data(cherry_blossoms)
+df_raw <- cherry_blossoms %>% 
+	select(year,doy,temp) %>% 
+	subset(complete.cases(.)) %>% 
+	rename(Y=year, T=temp, D=doy)
+df <- mutate(df_raw, across(-any_of('Y'),standardize))
+	
+
+a_const <- alist( D ~ dnorm(mu, sigma)
+                , mu <- a
+				, a     ~ dnorm(0,1)
+				, sigma ~ dexp(1) )
+a_linear <- alist(  D ~ dnorm(mu, sigma)
+                 , mu <- a + bT * T
+			     , a     ~ dnorm(0,1)
+				 , bT    ~ dnorm(0,1)
+				 , sigma ~ dexp(1) )
+a_quadratic <- alist(  D ~ dnorm(mu, sigma)
+                    , mu <- a + bT * T + bT2 * T**2
+			        , a     ~ dnorm(0,1)
+		     	    , bT    ~ dnorm(0,1)
+					, bT2   ~ dnorm(0,1)
+				    , sigma ~ dexp(1) )
+a_cubic <- alist(  D ~ dnorm(mu, sigma)
+                , mu <- a + bT * T + bT2 * T**2 + bT3 * T**3
+			    , a     ~ dnorm(0,1)
+		     	, bT    ~ dnorm(0,1)
+				, bT2   ~ dnorm(0,1)
+				, bT3   ~ dnorm(0,1)
+				, sigma ~ dexp(1) )
+
+m_const     <- quap(a_const    , data=df)
+m_linear    <- quap(a_linear   , data=df)
+m_quadratic <- quap(a_quadratic, data=df)
+m_cubic     <- quap(a_cubic    , data=df)
+
+compare(m_const, m_linear, m_quadratic, m_cubic, func=PSIS)
+```
+
+```{r CherryBlossomPrediction}
+temperature <- 9
+z <- (temperature - mean(df_raw$T))/sd(df_raw$T)
+
+res <- data.frame(doy_p=sim( m_linear, data=list(T=z))) %>% 
+	mutate(D = doy_p * sd(df_raw$D) + mean(df_raw$D))
+
+ggplot(res,aes(x=D)) +
+	geom_density(colour=ggthemes::tableau_color_pal()(1)[1], group='Sim') +
+	geom_density(colour=ggthemes::tableau_color_pal()(2)[2], group='Dat', data=df_raw)
+
+```
+A predicted earlier bloom.
