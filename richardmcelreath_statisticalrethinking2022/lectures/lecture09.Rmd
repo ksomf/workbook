@@ -1,4 +1,4 @@
-# Modelling Events
+# Lecture 9: Modelling Events
 
 The learning example is influence of admission rates, with per department data. This leads to a very common basic mediating pathway:
 
@@ -112,3 +112,5 @@ Now beware, when we perform an intervention on gender, we are really changing th
 ### Beware
 
 Discrimination effects can hide in all sorts of places, for instance from the department choice itself; here be confounds.
+
+# Week 4 Homework
