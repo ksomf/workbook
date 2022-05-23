@@ -1,0 +1,55 @@
+# Lecture 11: Ordered Categories
+
+The examples in statistics courses are very simple. Of course in reality we meet real terror.
+
+## Trolley Problems
+
+\begin{tikzcd}
+X \arrow[r] & R & S \arrow[l] \\
+E \arrow[ur] & A \arrow[l] \arrow[u] & G \arrow[bend left=30,ll] \arrow[ul]
+\end{tikzcd}
+
+Response $R$ of trolley problem story $S$, with affecting variables education $E$, Age $A$ and Gender $G$. Now imagine people respond on a scale $1$ to $7$, obviously $3$ and $4$ are closer than $3$ and $6$. Moreover each person has a different interpretation of the scale, but their own personal anchor around which they answer.
+
+### Selection Confound Participation
+
+\begin{tikzcd}
+X \arrow[r] & R & S \arrow[l] \\
+E \arrow[ur] \arrow[dr] & A \arrow[l] \arrow[u] \arrow[d] & G \arrow[bend left=30,ll] \arrow[ul] \arrow[dl] \\
+& P 
+\end{tikzcd}
+
+So backdoor paths have been opened for instance $E, P, G, R$. Of course in the study they knew that there was such problems and they did repeated measurements and multiple stories with the same structure to help deconvolude some of it.
+
+## Ordered Logit
+
+So how does one model the data with a natural order? Well us cumulative sum of a set, constructing the order.
+
+```{r cdf}
+xs <- rdirichlet(1, rep(2,5))[1,]
+df <- data.frame(y=xs, x=seq_along(xs))
+ggplot(df, aes(x=x, xend=x, y=0, yend=y, colour='a')) +
+	geom_segment(size=1.3, alpha=0.9) +
+	ggthemes::scale_color_tableau() +
+	theme(legend.position = "none", panel.border = element_blank())
+ggplot(df %>% mutate(y = cumsum(y)), aes(x=x, xend=x, y=0, yend=y, colour='a')) +
+	geom_segment(size=1.3, alpha=0.9) +
+	ggthemes::scale_color_tableau() +
+	theme(legend.position = "none", panel.border = element_blank())
+```
+
+We then fit for the horizontal cut-points, for instance on the log odds. So how does one add other variables to change these cuttpoints based on other variables? We use the ordered logit which has $n-1$ intercept parameters. The intercept parameters only encode the separation between intercepts and the other variables the anchor.
+
+## Ordered Predictors
+
+So how does one have a monotonic affector variable (ie. Education level)
+
+$$ \phi_{i} = \beta_{E} \sum^{E_{i}}\delta_{j} $$
+
+where
+
+$$ \sum \delta_{j} = 1 $$
+
+and
+
+$$ \delta_{0} = 0. $$

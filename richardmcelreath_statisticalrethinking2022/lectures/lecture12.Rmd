@@ -1,0 +1,28 @@
+# Lecture 12: Multi Level Models
+
+Revisiting the trolly problem
+
+\begin{tikzcd}
+&& U \arrow[dl] \\
+X \arrow[r] & R & S \arrow[l] \\
+E \arrow[ur] & A \arrow[l] \arrow[u] & G \arrow[bend left=30,ll] \arrow[ul]
+\end{tikzcd}
+
+now with individual $U$. So how does one add memory to this model?
+
+## Partial Pooling
+
+For intance in our case the individual might have their own preference, simply replace the fixed $\sigma$ in a prior to a fit prior. (exp(1) is a good prior for such a distribution). The fit $\sigma$ then represents the memory in observations.
+
+
+### Note
+
+- Fitting for $\sigma$ adds dependecies for your other priors, reducing flexibility, in other words the effective parameters.
+- Adding new (correctly identified causal) variables to the model will also reduce the fit $\sigma$.
+  - By adding treatments one by one we can observe things about the size of effects we see, remember the highly non linear effect of parameters in our GLMs.
+
+### The Three Great Superstitions
+
+- Different levels **do not** need to be sampled at random
+- **Do not** need large sample sizes
+- This **does not** assume Gaussian variation

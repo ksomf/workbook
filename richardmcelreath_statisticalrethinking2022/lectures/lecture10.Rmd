@@ -1,0 +1,143 @@
+# Lecture 10: Counts and Confounds
+
+\begin{tikzcd}
+& D \arrow[dr] & u \arrow[l] \arrow[d] \\
+G \arrow[ur] \arrow[rr] && A
+\end{tikzcd}
+
+Looking at admission based on gender and department with unobserved skill $u$. We can get the total affect of gender on admissions but not the direct affect due to the collider on $D$. The effect of this confound can mask the effect of discrimination, people making choices based on their skill level and their knowledge of departments discrimination.
+
+If we had access to $u$ we could of course remove the confound by stratifying on $u$ as well and everything becomes alright. But in practice how do we get around it. Ideally would randomise the department applied to, but not really practically possible in every case. So what are the other options:
+
+1. Sensitivity Analysis
+2. Proxies
+
+## Sensitivity Analysis
+
+Trying to determine consequence of confound based on strength of the confound. In other words the question we answer is: how strong must the confound be to affect our answer. Simply put add it to the model and instead of passing in, add models for each of it's effects and pass in the coefficients for it.
+
+## Proxies
+
+But what if we could observe some other related quantites, for instance some test scores.
+
+\begin{tikzcd}
+&              & T_1 \\
+& D \arrow[dr] & u \arrow[l] \arrow[d] \arrow[u] \arrow[r] & T_2 \\
+G \arrow[ur] \arrow[rr] && A
+\end{tikzcd}
+
+This would give us a model
+
+$$ \begin{aligned}
+A_i &\sim Bernoulli(p_i) \\
+logit(p_i) &= \alpha[G_i,D_i] + \beta_{G_i} u_i \\
+u_k &\sim Normal(0,1) \\
+T_{ij} &\sim Normal(\mu_i,\tau_j)
+\end{aligned} $$
+
+We can then just fit for everything simultaneously. 
+
+### Note 
+
+This model has more parameters than observations! This is possible because the relationship determines how many parameters you have, an these restrictions dramatically reduce your 'effective' parameters.
+
+## Tools in Oceanic Societies
+
+\begin{tikzcd}
+C \arrow[dr] & L \arrow[l] \arrow[dl] \arrow[d] \\
+P \arrow[u] \arrow[r] & T
+\end{tikzcd}
+
+Tools based on population, count and location. As there is no physical bound on the number of tools, this is a Poisson distribution, which has typical link function being $log$ (log-linear models). This enforces positivity. However beware of good priors, $Normal(3,0.5)$ is a good prior with about mean $20$, so adjust as apropiate. Linear coefficients for such an intercept would be around $Normal(0,0.2)$.
+
+```{r ToolData}
+data(Kline)
+```
+
+$$ \begin{aligned}
+T_i &\sim Poisson(\lambda_i) \\
+log(\lambda_i) &= \alpha_{C_i) + \beta_{C_i} log(P_i) \\
+\alpha_j &\sim Normal(3,0.5) \\
+\beta_j &\sim Normal(0,0.2) 
+\end{aligned} $$
+
+Here population is log normalised as it's suspected to be some diminishing returns.
+
+### Evolving the Fit
+
+The naive fit does not have some physical expected inferences. At high population, high contact islands would have fewer tools than those with no contact. Aditionally at zero population this can predict finite tools. Either
+
+1. Either use a more robust model, the student-t equivalent being the gamma-Poisson (negative-binomial)
+2. Use scienctificly reasoned model
+
+### Innovation Loss Model
+
+Start modelling change per unit time
+
+$$ \Delta T = \alpha_C P^{\beta_C} - \gamma T $$
+
+Which models innovation rate $\alpha$, elasticity $\beta$ (dimminishing return) and per tool loss rate $\gamma$. So for equilibrium
+
+$$ \hat{T} = \frac{\alpha_C P^{\beta_C}}{\gamma} $$
+
+This is the expected average amount of tools (in $\lambda$ in our previous model).
+
+# Week 5 Homework
+
+## Q1: NWOGrants
+
+```{r NWOGrantsLoad}
+data(NWOGrants)
+df_raw <- NWOGrants
+df <- df_raw %>% 
+	mutate(across(everything(),as.integer)) %>% 
+	rename(D=discipline, G=gender, N=applications, A=awards)
+	
+
+a_total <- alist(
+	A ~ dbinom(N,p),
+	logit(p) <- a[G],
+	a[G] ~ dnorm(0,1)
+)
+
+a_direct <- alist(
+	A ~ dbinom(N,p),
+	logit(p) <- a[G,D],
+	matrix[G,D]:a ~ dnorm(0,1)	
+)
+
+m_total  <- ulam(a_total , df, chains=2, cores=2, log_lik=TRUE)
+m_direct <- ulam(a_direct, df, chains=2, cores=2, log_lik=TRUE)
+
+precis(m_total , depth=2)
+precis(m_direct, depth=3)
+compare(m_total, m_direct, func=PSIS)
+```
+
+```{r NWODirectContrast}
+post_total <- extract.samples(m_total)
+post_total$ia <- inv_logit(post_direct$a)
+total_contrast <- post_total$ia[,1] - post_total$ia[,2]
+
+applicant_counts <- df %>% group_by(D) %>% summarise(N = sum(N))
+total_applicants <- sum(df$N)
+post_total_1 <- link(m_direct,data=list(
+	D <- rep(applicant_counts$D,times=applicant_counts$N),
+	N <- rep(1,total_applicants),
+	G <- rep(1,total_applicants)
+)) %>% as.vector()
+post_total_2 <- link(m_direct,data=list(
+	D <- rep(applicant_counts$D,times=applicant_counts$N),
+	N <- rep(1,total_applicants),
+	G <- rep(2,total_applicants)
+)) %>% as.vector()
+direct_contrast <- post_total_1 - post_total_2
+
+data = rbind(data.frame(x=total_contrast ) %>% mutate(t='total')
+			,data.frame(x=direct_contrast) %>% mutate(t='direct'))
+	
+ggplot(data, aes(x=x, colour=t)) +
+	geom_density() +
+	scale_color_tableau()
+```
+
