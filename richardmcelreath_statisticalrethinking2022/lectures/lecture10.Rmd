@@ -56,7 +56,7 @@ data(Kline)
 
 $$ \begin{aligned}
 T_i &\sim Poisson(\lambda_i) \\
-log(\lambda_i) &= \alpha_{C_i) + \beta_{C_i} log(P_i) \\
+log(\lambda_i) &= \alpha_{C_i} + \beta_{C_i} log(P_i) \\
 \alpha_j &\sim Normal(3,0.5) \\
 \beta_j &\sim Normal(0,0.2) 
 \end{aligned} $$
@@ -116,7 +116,7 @@ compare(m_total, m_direct, func=PSIS)
 
 ```{r NWODirectContrast}
 post_total <- extract.samples(m_total)
-post_total$ia <- inv_logit(post_direct$a)
+post_total$ia <- inv_logit(post_total$a)
 total_contrast <- post_total$ia[,1] - post_total$ia[,2]
 
 applicant_counts <- df %>% group_by(D) %>% summarise(N = sum(N))

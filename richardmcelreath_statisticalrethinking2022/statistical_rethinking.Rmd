@@ -20,6 +20,7 @@ params:
 knitr::opts_chunk$set(echo=TRUE)
 
 library(ggplot2)
+library(ggthemes)
 library(rethinking, quietly=TRUE)
 library(gtools)
 library(tidyverse)
@@ -53,6 +54,15 @@ library(tidyverse)
 ```
 
 ```{r lecture09, child = if(params$chapters == 'all') 'lectures/lecture09.Rmd' }
+```
+
+```{r lecture10, child = if(params$chapters == 'all') 'lectures/lecture10.Rmd' }
+```
+
+```{r lecture11, child = if(params$chapters == 'all') 'lectures/lecture11.Rmd' }
+```
+
+```{r lecture12, child = if(params$chapters == 'all') 'lectures/lecture12.Rmd' }
 ```
 
 ```{r chapter, child = if(params$chapters != 'all') params$chapters }
