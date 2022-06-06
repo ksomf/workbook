@@ -21,8 +21,8 @@ Trying to determine consequence of confound based on strength of the confound. I
 But what if we could observe some other related quantites, for instance some test scores.
 
 \begin{tikzcd}
-&              & T_1 \\
-& D \arrow[dr] & u \arrow[l] \arrow[d] \arrow[u] \arrow[r] & T_2 \\
+&              & T1 \\
+& D \arrow[dr] & u \arrow[l] \arrow[d] \arrow[u] \arrow[r] & T2 \\
 G \arrow[ur] \arrow[rr] && A
 \end{tikzcd}
 
@@ -39,7 +39,7 @@ We can then just fit for everything simultaneously.
 
 ### Note 
 
-This model has more parameters than observations! This is possible because the relationship determines how many parameters you have, an these restrictions dramatically reduce your 'effective' parameters.
+This model has more parameters than observations! This is possible because the relationship determines how many parameters you have, an these restrictions dramatically reduce your ---effective--- parameters.
 
 ## Tools in Oceanic Societies
 
@@ -74,11 +74,11 @@ The naive fit does not have some physical expected inferences. At high populatio
 
 Start modelling change per unit time
 
-$$ \Delta T = \alpha_C P^{\beta_C} - \gamma T $$
+$$ \Delta T = \alpha_{C} P^{\beta_{C}} - \gamma T $$
 
 Which models innovation rate $\alpha$, elasticity $\beta$ (dimminishing return) and per tool loss rate $\gamma$. So for equilibrium
 
-$$ \hat{T} = \frac{\alpha_C P^{\beta_C}}{\gamma} $$
+$$ \hat{T} = \frac{\alpha_{C} P^{\beta_{C}}}{\gamma} $$
 
 This is the expected average amount of tools (in $\lambda$ in our previous model).
 

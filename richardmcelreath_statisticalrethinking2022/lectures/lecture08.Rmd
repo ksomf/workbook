@@ -1,6 +1,6 @@
 # Lecture 8: Markov Chain Monte Carlo
 
-To drawing the Baysian owl, if your response 'Just Analyse the data' is a bit sarcastic, your fairly justified. In simple cases we can just reason forms for the solutions, but life isn't simple. Lots of problems aren't multi variate Gaussians, so we need to expand our repetoir.
+To drawing the Baysian owl, if your response ---Just Analyse the data--- is a bit sarcastic, your fairly justified. In simple cases we can just reason forms for the solutions, but life isn't simple. Lots of problems aren't multi variate Gaussians, so we need to expand our repetoir.
 
 While MCMC is computatinally intensive, it has way more flexible. We can visit each parameter in proportion to it's probability, thus mapping through arbitrary parameter space. Need to only know relative probability of two spots at a time for the next step.
 
@@ -40,4 +40,4 @@ While HMC makes good proposal, if the discrete simulation parameters add enough 
 
 ## The Folk Theorem of Statistical Computing
 
-'When you have computational problems, often there's a problem with your model' - Andrew Gelman
+When you have computational problems, often there's a problem with your model - Andrew Gelman

@@ -16,7 +16,7 @@ Stratefying by parent would lead to removal of $G$ through $P$ but introduce ass
 2. Determine logical consequences
 3. Test
 
-By not being 'clever', and instead using simple deductions the model can be understood, and most importantly verify and challenge your work.
+By not being ---clever--- and instead using simple deductions the model can be understood, and most importantly verify and challenge your work.
 
 ## Randomisation
 
@@ -93,7 +93,7 @@ There are six paths, one of which $X \to A \to Z \to B \to Y$ which will open if
 
 Additionally looking at the course recommended paper [@Cinelli2022].
 
-One of the worst case offenders for bad controls is the 'm-bias'
+One of the worst case offenders for bad controls is the ---m-bias---
 
 \begin{tikzcd}
 u \arrow[d] \arrow[r] & Z & v \arrow[l] \arrow[d] \\

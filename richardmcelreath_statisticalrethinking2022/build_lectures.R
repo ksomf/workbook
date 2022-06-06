@@ -1,4 +1,4 @@
-#!/usr/local/bin/Rscript
+#!/bin/env Rscript
 
 library(knitr)
 library(rmarkdown)

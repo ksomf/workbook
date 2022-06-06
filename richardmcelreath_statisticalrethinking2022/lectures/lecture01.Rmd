@@ -25,7 +25,7 @@
 The reason for using a Bayesian aproach for this is the flexibility, ability to express uncertainty in any situation and direct solutions for measurement errors and missing data.
 All this without worrying about the procedure and estimator to use.
 
-Science should be before statistics, causal inference is the component that requires the most care. "No causes in, no causes out" -Nancy Cartwright
+Science should be before statistics, causal inference is the component that requires the most care. ---No causes in, no causes out -Nancy Cartwright---
 
 ## What is Causal Inference?
 `Causation does not imply correlation`

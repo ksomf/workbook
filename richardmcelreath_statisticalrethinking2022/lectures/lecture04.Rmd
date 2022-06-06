@@ -147,7 +147,7 @@ m_SHW_full = quap(
 )
 precis(m_SHW_full,depth=2)
 
-HW_sim = sim(m_SHW_full,data=list(S=c(1,2),Hbar=datf$Hbar),vars=c('H','W'))
+#HW_sim = sim(m_SHW_full,data=list(S=c(1,2),Hbar=datf$Hbar),vars=c('H','W'))
 ```
 
 

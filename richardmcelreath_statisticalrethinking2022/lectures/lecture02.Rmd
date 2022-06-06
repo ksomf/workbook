@@ -166,7 +166,7 @@ making the updating step much easier to understand. Note that a flat prior, ie e
 
 
 
-So the next question how does one report a result from such a distribution. Can one use the mean or median; well generally no the distribution is the answer, and these 'point estimates' remove some of the complexity of your data, of course publications may want you to present such an arbitrary value. Well then maybe a confidence interval to communicate some of the shape; again no, but somewhat more useful, it is just a reduction of the distribution. For instance a 50% interval doesn't really describe the data that well as the center or first or last 50% are equally valid. Something like a 99% interval does have more of a use describing how well something is described, but it is really just arbitrary -- **The distribution is the answer** -- 95% intervals don't have anything to do with robustness.
+So the next question how does one report a result from such a distribution. Can one use the mean or median; well generally no the distribution is the answer, and these ---point estimates--- remove some of the complexity of your data, of course publications may want you to present such an arbitrary value. Well then maybe a confidence interval to communicate some of the shape; again no, but somewhat more useful, it is just a reduction of the distribution. For instance a 50% interval doesn't really describe the data that well as the center or first or last 50% are equally valid. Something like a 99% interval does have more of a use describing how well something is described, but it is really just arbitrary -- **The distribution is the answer** -- 95% intervals don't have anything to do with robustness.
 
 ```{r BinomFigure, echo=TRUE, include=TRUE, out.width='0.49\\linewidth', fig.align='center', fig.cap=c('(ref:BinomFigureCaption)')}
 ps = seq(0,1,length.out=1000)
@@ -183,7 +183,7 @@ ggplot(d) +
 	scale_colour_manual(name='Samples Water', labels=c('1/1','3/6','5/8'), values=ggthemes::tableau_color_pal()(3))
 ```
 
-(ref:BinomFigureCaption) Binomial distributions for proportion of 'true' given specified true and total measurements.
+(ref:BinomFigureCaption) Binomial distributions for proportion of true given specified true and total measurements.
 
 ## From Posterior to Prediction
 
