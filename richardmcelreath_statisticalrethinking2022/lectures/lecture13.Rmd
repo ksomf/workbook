@@ -1,0 +1,113 @@
+# Lecture 13: Multi-Multi Level Models
+
+While varying effect models are a good default fitting the heterogeneity during the fit, but how do we add multiple multi-effect models at the same time.
+
+## Prosocial Chimpanzies
+
+
+Whether Chimpanzee pulls pro social option.
+
+
+\begin{tikzcd}
+T \arrow[dr] \\
+B \arrow[r] & P \\
+A \arrow[ur]
+\end{tikzcd}
+
+For treatment $T$ (prosocial right no partner, left no partner, right partner, left partner), block (batch) $B$ and actor $A$ pulling the left leaver $P$. Notice because of the careful controlled setup the DAG is very clean. Now ass we expect the actor affect to be dominated by handedness we don't model it's interactions with the other parameters (In fact our DAG expects all parameters to be independent, nevertheless it might be wise to check association between $T$ and $B$.)
+
+$$\begin{aligned}
+P            &\sim \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \beta_{T_{i},B_{i}} + \alpha_{A_{i}} \\
+\alpha_{j}   &\sim \mathrm{Normal}(\bar{\alpha}, \sigma_{A}) \\
+\beta_{j,k}  &\sim \mathrm{Normal}(0           , \sigma_{B}) \\
+\sigma_{j}   &\sim \mathrm{Exponential}(1)
+\end{aligned}$$
+
+To some type of statistics treatments prefer fixed priors, and partial pooling is thought to be a bad choice. However obviously the treatments only influences the behaviour of the Chimpanzees, and two treatments might be similar.  In essence we get better estimates through regularisation, and avoiding over and underfitting is always good.
+
+```{r ChimpLoad}
+data(chimpanzees)
+
+df <- chimpanzees
+
+d <- list( T = (df$prosoc_left + 1) + 2*(df$condition)
+         , B = df$block
+         , A = df$actor
+         , P = df$chose_prosoc
+         , N = nrow(df))
+ d$N_B <- length(unique(d$B))
+ d$N_T <- length(unique(d$T))
+ d$N_A <- length(unique(d$A))
+```
+
+```{r ChimbStan, child='../models/l13_m0.stan', eval=FALSE}
+```
+
+
+```{r ChimbStanCall}
+m0 <- cstan(file='../models/l13_m0.stan', data=d, chains=4, cores=4, iter=4000)
+precis(m0, depth=3)
+dashboard(m0)
+```
+
+As we can see the sampling is not so effective here, our model is centered a problem **in this case**.
+
+```{r ChimbSim}
+post <- extract.samples(m0)
+pA <- post$a %>% 
+	inv_logit() %>% 
+	as.data.frame() %>% 
+	pivot_longer(everything(), names_to='Actor', names_prefix='X', values_to='p') %>% 
+	group_by(Actor) %>% 
+	summarise(mean=mean(p), hpdi=HPDI(p)) %>%
+	summarise(mean=mean(mean), hpdi_lower=min(hpdi), hpdi_upper=max(hpdi))
+
+ggplot(pA) +
+	geom_point(aes(x=Actor, y=mean, colour='')) +
+	geom_segment(aes(x=Actor, xend=Actor, y=hpdi_lower, yend=hpdi_upper, colour='')) +
+	theme(legend.position='none') +
+	scale_color_tableau()
+
+pB <- cbind(expand.grid(S=1:dim(post$b)[1], T=c('R/N','L/N','R/P','L/P'),B=1:dim(post$b)[3]), p=as.vector(post$b)) %>% 
+	select(-S) %>% 
+	group_by(T) %>% 
+	summarise(mean=mean(p), hpdi=HPDI(p)) %>% 
+	summarise(mean=mean(mean), hpdi_lower=min(hpdi), hpdi_upper=max(hpdi))
+
+ggplot(pB) +
+	geom_point(aes(x=T, y=mean, colour='')) +
+	geom_segment(aes(x=T, xend=T, y=hpdi_lower, yend=hpdi_upper, colour='')) +
+	theme(legend.position='none')+
+	scale_color_tableau()
+
+data.frame(sigma_A=post$sigma_A, sigma_B=post$sigma_B) %>% 
+	pivot_longer(everything(), names_to='var', names_prefix='sigma_', values_to='sigma') %>% 
+	ggplot() +
+	geom_density(aes(x=sigma, colour=var)) +
+	scale_colour_tableau()
+```
+ 
+### Aside
+
+Remember that we can from the posterior result generate as many imaginary samples as we want and contrast them between other conditions.
+
+## Centered Models
+
+Now HMC can have problems with gradients of the distributions that are being sampled if the distributions depend on each other through ingranular levels of pseudo
+-momentum. 
+
+$$\begin{aligned}
+a      &\sim \mathrm{Normal}(0,1) \\
+\sigma &\sim \mathrm{Normal}(b,\exp(a))
+\end{aligned}$$
+
+is equivalent to 
+
+$$\begin{aligned}
+a      &\sim \mathrm{Normal}(0,1) \\
+\sigma &=    b + z \exp(a) \\
+z      &\sim \mathrm{Normal}(0,1)
+\end{aligned}$$
+
+but the gradients on each of the distributions is more comparable.
