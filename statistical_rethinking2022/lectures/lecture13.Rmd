@@ -111,3 +111,51 @@ z      &\sim \mathrm{Normal}(0,1)
 \end{aligned}$$
 
 but the gradients on each of the distributions is more comparable.
+
+```{r ChimbStanOC, child='../models/l13_m1.stan', eval=FALSE}
+```
+
+
+```{r ChimbStanCallOC}
+m1 <- cstan(file='../models/l13_m1.stan', data=d, chains=4, cores=4, iter=4000)
+precis(m1, depth=3)
+dashboard(m1)
+```
+
+As we can see the sampling is not so effective here, our model is centered a problem **in this case**.
+
+```{r ChimbSimOC}
+post <- extract.samples(m1)
+pA <- post$a %>% 
+	inv_logit() %>% 
+	as.data.frame() %>% 
+	pivot_longer(everything(), names_to='Actor', names_prefix='X', values_to='p') %>% 
+	group_by(Actor) %>% 
+	summarise(mean=mean(p), hpdi=HPDI(p)) %>%
+	summarise(mean=mean(mean), hpdi_lower=min(hpdi), hpdi_upper=max(hpdi))
+
+ggplot(pA) +
+	geom_point(aes(x=Actor, y=mean, colour='')) +
+	geom_segment(aes(x=Actor, xend=Actor, y=hpdi_lower, yend=hpdi_upper, colour='')) +
+	theme(legend.position='none') +
+	scale_color_tableau()
+
+pB <- cbind(expand.grid(S=1:dim(post$b)[1], T=c('R/N','L/N','R/P','L/P'),B=1:dim(post$b)[3]), p=as.vector(post$b)) %>% 
+	select(-S) %>% 
+	group_by(T) %>% 
+	summarise(mean=mean(p), hpdi=HPDI(p)) %>% 
+	summarise(mean=mean(mean), hpdi_lower=min(hpdi), hpdi_upper=max(hpdi))
+
+ggplot(pB) +
+	geom_point(aes(x=T, y=mean, colour='')) +
+	geom_segment(aes(x=T, xend=T, y=hpdi_lower, yend=hpdi_upper, colour='')) +
+	theme(legend.position='none')+
+	scale_color_tableau()
+
+data.frame(sigma_A=post$sigma_A, sigma_B=post$sigma_B) %>% 
+	pivot_longer(everything(), names_to='var', names_prefix='sigma_', values_to='sigma') %>% 
+	ggplot() +
+	geom_density(aes(x=sigma, colour=var)) +
+	scale_colour_tableau()
+```
+ 

@@ -1,0 +1,148 @@
+# Lecture 13: Correlated Varying Effects
+
+## Prosocial Chimpanzies
+
+
+Same model as last chapter, whether Chimpanzee pulls pro social option.
+
+
+\begin{tikzcd}
+T \arrow[dr] \\
+B \arrow[r] & P \\
+A \arrow[ur]
+\end{tikzcd}
+
+For treatment $T$ (prosocial right no partner, left no partner, right partner, left partner), block (batch) $B$ and actor $A$ pulling the left leaver $P$. Notice because of the careful controlled setup the DAG is very clean. Now ass we expect the actor affect to be dominated by handedness we don't model it's interactions with the other parameters (In fact our DAG expects all parameters to be independent, nevertheless it might be wise to check association between $T$ and $B$.)
+
+
+However now we want to try measure correlation between parameters in our multi level models, of course this requires correlation matrices. The most common prior for such a matrix is an LKJ matrix which has mean $I$.
+
+$$\begin{aligned}
+P            &\sim \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \bar{\alpha}_{A_{i}} + \alpha_{A_{i},T_{i}} + \bar{\beta}_{B_{i}} + \beta_{T_{i},B_{i}}  \\
+\alpha_{j,k}   &\sim \mathrm{MVNormal}(\vec{0}, \rho_{A}, S_{A}) \\
+\beta_{j,k}  &\sim \mathrm{MVNormal}(\vec{0}, \rho_{B}, S_{B}) \\
+\bar{\alpha}_{j}  &\sim \mathrm{Normal}(0,\tau_{A}) \\
+\bar{\beta}_{j}   &\sim \mathrm{Normal}(0,\tau_{B}) \\
+\tau_{j}, S_{k}   &\sim \mathrm{Exponential}(1) \\
+R_{j}             &\sim \mathrm{LJKCorr(4)}
+\end{aligned}$$
+
+```{r ChimpLoadTwo}
+data(chimpanzees)
+
+df <- chimpanzees
+
+d <- list( T = (df$prosoc_left + 1) + 2*(df$condition)
+         , B = as.integer(df$block)
+         , A = as.integer(df$actor)
+         , P = df$pulled_left
+         , N = nrow(df))
+ d$N_B <- max(d$B)
+ d$N_T <- max(d$T)
+ d$N_A <- max(d$A)
+```
+
+```{r ChimbStanMV, child='../models/l4_m0.stan', eval=FALSE}
+```
+
+
+```{r ChimbStanCallMV}
+m0 <- cstan(file='../models/l14_m0.stan', data=d, chains=4, cores=8, threads=2, iter=4000)
+precis(m0, depth=3)
+dashboard(m0)
+```
+
+As we can see the sampling is not so effective here, our model is centered a problem **in this case**. But how does one do this with these matrix terms? Can decompose out the Cholesky Factors $L_{A}$.
+
+$$\alpha = \left( \mathrm{diag}(S_A)L_{A} Z_{T,A} \right)^{T}$$
+
+Giving us a equivalent non-centred model
+
+$$\begin{aligned}
+P            &\sim \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \bar{\alpha}_{A_{i}} + \alpha_{A_{i},T_{i}} + \bar{\beta}_{B_{i}} + \beta_{T_{i},B_{i}}  \\
+\alpha_{j,k}   &\sim \left(\mathrm{diag}(S_{A})L_{A}Z_{T,A}\right)^{T} \\
+\beta_{j,k}  &\sim \left(\mathrm{diag}(S_{B})L_{B}Z_{T,B}\right)^{T} \\
+Z_{T,A}, Z_{T,B} &\sim \mathrm{Normal}(0,1) \\
+z_{\bar{\alpha},j}, z_{\bar{\beta},j} &\sim \mathrm{Normal}(0,1) \\
+\bar{\alpha}_{j}  &= z_{\bar{\alpha}}\tau_{A} \\
+\bar{\beta}_{j}   &= z_{\bar{\beta}}\tau_{B} \\
+\vec{\tau}, \vec{S}   &\sim \mathrm{Exponential}(1) \\
+\vec{R}             &\sim \mathrm{LJKCorr(4)}
+\end{aligned}$$
+
+```{r ChimbStanMVOC, child='../models/l4_m1.stan', eval=FALSE}
+```
+
+
+```{r ChimbStanCallMVOC}
+m1 <- cstan(file='../models/l14_m1.stan', data=d, chains=4, cores=8, threads=2, iter=4000)
+precis(m1, depth=3)
+dashboard(m1)
+```
+
+```{r ChimbSimMVOC}
+post <- extract.samples(m1)
+araw <- rep(post$abar, each=dim(post$a)[3] ) + post$a
+pA <- cbind(expand.grid(S=1:dim(post$a)[1], A=1:dim(post$a)[2], T=c('R/N','L/N','R/P','L/P')), p=as.vector(araw)) %>% 
+  group_by(A,T) %>% 
+  summarise(mean=mean(p), hpdi=HPDI(p)) %>%
+  ungroup() %>% 
+  group_by(A,T,mean) %>% 
+	summarise(hpdi_lower=min(hpdi), hpdi_upper=max(hpdi)) %>% 
+  as.data.frame() %>% 
+  ungroup()
+
+ggplot(pA) +
+	geom_point(aes(x=A, y=mean, colour=''), position=position_dodge()) +
+	geom_segment(aes(x=A, xend=A, y=hpdi_lower, yend=hpdi_upper, colour=''), position=position_dodge()) +
+	theme(legend.position='none') +
+	scale_color_tableau()
+
+braw <- rep(post$bbar, each=dim(post$b)[3]) + post$b
+pB <- cbind(expand.grid(S=1:dim(post$b)[1], B=1:dim(post$b)[2], T=c('R/N','L/N','R/P','L/P')), p=as.vector(braw)) %>% 
+	select(-S) %>% 
+	group_by(T) %>% 
+	summarise(mean=mean(p), hpdi=HPDI(p)) %>% 
+  ungroup() %>% 
+  group_by(T,mean) %>% 
+	summarise( hpdi_lower=min(hpdi), hpdi_upper=max(hpdi)) %>% 
+  ungroup()
+
+ggplot(pB) +
+	geom_point(aes(x=T, y=mean, colour='')) +
+	geom_segment(aes(x=T, xend=T, y=hpdi_lower, yend=hpdi_upper, colour='')) +
+	theme(legend.position='none')+
+	scale_color_tableau()
+
+data.frame(sigma_A=post$sigma_A, sigma_B=post$sigma_B, tau_A=post$tau_A, tau_B=post$tau_B) %>% 
+	pivot_longer(everything(), names_to='var', values_to='sigma') %>% 
+	ggplot() +
+	geom_density(aes(x=sigma, colour=var)) +
+	scale_colour_tableau()
+```
+ 
+### Aside
+
+Remember that we can from the posterior result generate as many imaginary samples as we want and contrast them between other conditions.
+
+## Centered Models
+
+Now HMC can have problems with gradients of the distributions that are being sampled if the distributions depend on each other through ingranular levels of pseudo
+-momentum. 
+
+$$\begin{aligned}
+a      &\sim \mathrm{Normal}(0,1) \\
+\sigma &\sim \mathrm{Normal}(b,\exp(a))
+\end{aligned}$$
+
+is equivalent to 
+
+$$\begin{aligned}
+a      &\sim \mathrm{Normal}(0,1) \\
+\sigma &=    b + z \exp(a) \\
+z      &\sim \mathrm{Normal}(0,1)
+\end{aligned}$$
+
+but the gradients on each of the distributions is more comparable.
