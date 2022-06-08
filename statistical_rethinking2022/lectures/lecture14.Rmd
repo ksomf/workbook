@@ -84,7 +84,8 @@ dashboard(m1)
 
 ```{r ChimbSimMVOC}
 post <- extract.samples(m1)
-araw <- rep(post$abar, each=dim(post$a)[3] ) + post$a
+
+araw <- inv_logit(apply(post$a, 3, function(x) x + post$abar))
 pA <- cbind(expand.grid(S=1:dim(post$a)[1], A=1:dim(post$a)[2], T=c('R/N','L/N','R/P','L/P')), p=as.vector(araw)) %>% 
   group_by(A,T) %>% 
   summarise(mean=mean(p), hpdi=HPDI(p)) %>%
@@ -95,24 +96,24 @@ pA <- cbind(expand.grid(S=1:dim(post$a)[1], A=1:dim(post$a)[2], T=c('R/N','L/N',
   ungroup()
 
 ggplot(pA) +
-	geom_point(aes(x=A, y=mean, colour=''), position=position_dodge()) +
-	geom_segment(aes(x=A, xend=A, y=hpdi_lower, yend=hpdi_upper, colour=''), position=position_dodge()) +
+	geom_point(aes(x=A, y=mean, colour='', group=`T`), position=position_dodge(width=0.5)) +
+	geom_linerange(aes(x=A, ymin=hpdi_lower, ymax=hpdi_upper, colour='', group=`T`), position=position_dodge(width=0.5)) +
 	theme(legend.position='none') +
 	scale_color_tableau()
 
-braw <- rep(post$bbar, each=dim(post$b)[3]) + post$b
+braw <- inv_logit(apply(post$b, 3, function(x) x + post$bbar))
 pB <- cbind(expand.grid(S=1:dim(post$b)[1], B=1:dim(post$b)[2], T=c('R/N','L/N','R/P','L/P')), p=as.vector(braw)) %>% 
 	select(-S) %>% 
-	group_by(T) %>% 
+	group_by(B,T) %>% 
 	summarise(mean=mean(p), hpdi=HPDI(p)) %>% 
   ungroup() %>% 
-  group_by(T,mean) %>% 
+  group_by(B,T,mean) %>% 
 	summarise( hpdi_lower=min(hpdi), hpdi_upper=max(hpdi)) %>% 
   ungroup()
 
 ggplot(pB) +
-	geom_point(aes(x=T, y=mean, colour='')) +
-	geom_segment(aes(x=T, xend=T, y=hpdi_lower, yend=hpdi_upper, colour='')) +
+	geom_point(aes(x=T, y=mean, colour='', group=B), position=position_dodge(width=0.5)) +
+	geom_linerange(aes(x=T, ymin=hpdi_lower, ymax=hpdi_upper, colour='', group=B), position=position_dodge(width=0.5)) +
 	theme(legend.position='none')+
 	scale_color_tableau()
 
@@ -123,26 +124,3 @@ data.frame(sigma_A=post$sigma_A, sigma_B=post$sigma_B, tau_A=post$tau_A, tau_B=p
 	scale_colour_tableau()
 ```
  
-### Aside
-
-Remember that we can from the posterior result generate as many imaginary samples as we want and contrast them between other conditions.
-
-## Centered Models
-
-Now HMC can have problems with gradients of the distributions that are being sampled if the distributions depend on each other through ingranular levels of pseudo
--momentum. 
-
-$$\begin{aligned}
-a      &\sim \mathrm{Normal}(0,1) \\
-\sigma &\sim \mathrm{Normal}(b,\exp(a))
-\end{aligned}$$
-
-is equivalent to 
-
-$$\begin{aligned}
-a      &\sim \mathrm{Normal}(0,1) \\
-\sigma &=    b + z \exp(a) \\
-z      &\sim \mathrm{Normal}(0,1)
-\end{aligned}$$
-
-but the gradients on each of the distributions is more comparable.
