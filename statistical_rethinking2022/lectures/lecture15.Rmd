@@ -1,0 +1,74 @@
+# Lecture 15: Social Networks
+
+
+## Networks
+
+Mainly focused on Dyads, pair-wise relationships.
+
+What we are interested in is giving relationships, how much is reciprocal.
+
+
+\begin{tikzcd}
+& TBA \arrow[d] \\
+HA \arrow[r] \arrow[ur] \arrow[dr] & GAB & HB \arrow[l] \arrow[dl] \arrow[ul] \\
+& TAB \arrow[u]
+\end{tikzcd}
+
+Social giving $G_{AB}$ between households $H_{A}$ to $H_{B}$ based on one view of tie to the other $T_{AB}$. Note that $T_{AB}$ can not be observed, we really need to work with a generative model to get understanding about how we infer it.
+
+### Adhockery
+
+Permutation of network structure does not give a null model.
+
+## Social Network Model
+
+
+$$\begin{aligned}
+G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
+\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} \\
+G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
+\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} \\
+\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left(\begin{matrix} 0 \\ 0 \end{matrix}\right), \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma \end{matrix}\right]\right) \\
+\alpha  &\sim \mathrm{Normal}(0,1) \\
+\sigma  &\sim \mathrm{Exponential}(1) \\
+\rho            &\sim \mathrm{LJKCorr(2)}
+\end{aligned}$$
+
+
+Note that because we have dyads as our model we need two sets, one for each direction. (There are twice as many $T$s and $G$s as dyads).
+
+This model does not include the confounding household characteristics in our DAG so we need to introduce generalised giving $G$ and receiving $R$.
+
+$$\begin{aligned}
+G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
+\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} + G_{A} + R_{B} \\
+G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
+\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} + G_{B} + R_{A}\\
+\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma^{2} \end{matrix}\right]\right) \\
+\left(\begin{matrix} G_{A} \\ R_{A} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], R_{GR}, S_{GR}\right) \\
+\alpha  &\sim \mathrm{Normal}(0,1) \\
+\sigma, S_{GR}  &\sim \mathrm{Exponential}(1) \\
+\rho, R_{GR}    &\sim \mathrm{LJKCorr(2)}
+\end{aligned}$$
+
+
+## Posterior Social Networks
+
+Now the resultant network does not give just one network, some of the network might be stable between samples of the posterior, but others will change. The inference made on the network downstream must take multiple samples from the network posterior for the calculation, giving you the inherited uncertainty.
+
+Also remember that there are relationships beyond two, so tryads and onwards could be important.
+
+## Association Index
+
+What if we also had a measure of association $A_{AB}$ between two households and their wealth $W_{A}$.
+$$\begin{aligned}
+G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
+\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} + \beta_{A}A_{AB} + G_{A} + \beta_{WG} W_{A} + R_{B} + \beta_{WR} W_{B} \\
+G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
+\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} + \beta_{B}A_{AB} + G_{B} + \beta_{WG} W_{B} + R_{A} + \beta_{WR} W_{A}\\
+\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma^{2} \end{matrix}\right]\right) \\
+\left(\begin{matrix} G_{A} \\ R_{A} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], R_{GR}, S_{GR}\right) \\
+\alpha, \beta_{j,R}, \beta_{j,G}, \beta_{A} &\sim \mathrm{Normal}(0,1) \\
+\sigma, S_{GR}  &\sim \mathrm{Exponential}(1) \\
+\rho, R_{GR}    &\sim \mathrm{LJKCorr(2)}
+\end{aligned}$$

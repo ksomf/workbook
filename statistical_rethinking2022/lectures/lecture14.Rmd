@@ -1,74 +1,126 @@
-# Lecture 14: Social Networks
+# Lecture 13: Correlated Varying Effects
+
+## Prosocial Chimpanzies
 
 
-## Networks
-
-Mainly focused on Dyads, pair-wise relationships.
-
-What we are interested in is giving relationships, how much is reciprocal.
+Same model as last chapter, whether Chimpanzee pulls pro social option.
 
 
 \begin{tikzcd}
-& TBA \arrow[d] \\
-HA \arrow[r] \arrow[ur] \arrow[dr] & GAB & HB \arrow[l] \arrow[dl] \arrow[ul] \\
-& TAB \arrow[u]
+T \arrow[dr] \\
+B \arrow[r] & P \\
+A \arrow[ur]
 \end{tikzcd}
 
-Social giving $G_{AB}$ between households $H_{A}$ to $H_{B}$ based on one view of tie to the other $T_{AB}$. Note that $T_{AB}$ can not be observed, we really need to work with a generative model to get understanding about how we infer it.
+For treatment $T$ (prosocial right no partner, left no partner, right partner, left partner), block (batch) $B$ and actor $A$ pulling the left leaver $P$. Notice because of the careful controlled setup the DAG is very clean. Now ass we expect the actor affect to be dominated by handedness we don't model it's interactions with the other parameters (In fact our DAG expects all parameters to be independent, nevertheless it might be wise to check association between $T$ and $B$.)
 
-### Adhockery
 
-Permutation of network structure does not give a null model.
-
-## Social Network Model
-
+However now we want to try measure correlation between parameters in our multi level models, of course this requires correlation matrices. The most common prior for such a matrix is an LKJ matrix which has mean $I$.
 
 $$\begin{aligned}
-G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
-\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} \\
-G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
-\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} \\
-\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left(\begin{matrix} 0 \\ 0 \end{matrix}\right), \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma \end{matrix}\right]\right) \\
-\alpha  &\sim \mathrm{Normal}(0,1) \\
-\sigma  &\sim \mathrm{Exponential}(1) \\
-\rho            &\sim \mathrm{LJKCorr(2)}
+P            &\sim \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \bar{\alpha}_{A_{i}} + \alpha_{A_{i},T_{i}} + \bar{\beta}_{B_{i}} + \beta_{T_{i},B_{i}}  \\
+\alpha_{j,k}   &\sim \mathrm{MVNormal}(\vec{0}, \rho_{A}, S_{A}) \\
+\beta_{j,k}  &\sim \mathrm{MVNormal}(\vec{0}, \rho_{B}, S_{B}) \\
+\bar{\alpha}_{j}  &\sim \mathrm{Normal}(0,\tau_{A}) \\
+\bar{\beta}_{j}   &\sim \mathrm{Normal}(0,\tau_{B}) \\
+\tau_{j}, S_{k}   &\sim \mathrm{Exponential}(1) \\
+R_{j}             &\sim \mathrm{LJKCorr(4)}
 \end{aligned}$$
 
+```{r ChimpLoadTwo}
+data(chimpanzees)
 
-Note that because we have dyads as our model we need two sets, one for each direction. (There are twice as many $T$s and $G$s as dyads).
+df <- chimpanzees
 
-This model does not include the confounding household characteristics in our DAG so we need to introduce generalised giving $G$ and receiving $R$.
+d <- list( T = (df$prosoc_left + 1) + 2*(df$condition)
+         , B = as.integer(df$block)
+         , A = as.integer(df$actor)
+         , P = df$pulled_left
+         , N = nrow(df))
+ d$N_B <- max(d$B)
+ d$N_T <- max(d$T)
+ d$N_A <- max(d$A)
+```
+
+```{r ChimbStanMV, child='../models/l4_m0.stan', eval=FALSE}
+```
+
+
+```{r ChimbStanCallMV}
+m0 <- cstan(file='../models/l14_m0.stan', data=d, chains=4, cores=8, threads=2, iter=4000)
+precis(m0, depth=3)
+dashboard(m0)
+```
+
+As we can see the sampling is not so effective here, our model is centered a problem **in this case**. But how does one do this with these matrix terms? Can decompose out the Cholesky Factors $L_{A}$.
+
+$$\alpha = \left( \mathrm{diag}(S_A)L_{A} Z_{T,A} \right)^{T}$$
+
+Giving us a equivalent non-centred model
 
 $$\begin{aligned}
-G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
-\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} + G_{A} + R_{B} \\
-G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
-\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} + G_{B} + R_{A}\\
-\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma^{2} \end{matrix}\right]\right) \\
-\left(\begin{matrix} G_{A} \\ R_{A} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], R_{GR}, S_{GR}\right) \\
-\alpha  &\sim \mathrm{Normal}(0,1) \\
-\sigma, S_{GR}  &\sim \mathrm{Exponential}(1) \\
-\rho, R_{GR}    &\sim \mathrm{LJKCorr(2)}
+P            &\sim \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \bar{\alpha}_{A_{i}} + \alpha_{A_{i},T_{i}} + \bar{\beta}_{B_{i}} + \beta_{T_{i},B_{i}}  \\
+\alpha_{j,k}   &\sim \left(\mathrm{diag}(S_{A})L_{A}Z_{T,A}\right)^{T} \\
+\beta_{j,k}  &\sim \left(\mathrm{diag}(S_{B})L_{B}Z_{T,B}\right)^{T} \\
+Z_{T,A}, Z_{T,B} &\sim \mathrm{Normal}(0,1) \\
+z_{\bar{\alpha},j}, z_{\bar{\beta},j} &\sim \mathrm{Normal}(0,1) \\
+\bar{\alpha}_{j}  &= z_{\bar{\alpha}}\tau_{A} \\
+\bar{\beta}_{j}   &= z_{\bar{\beta}}\tau_{B} \\
+\vec{\tau}, \vec{S}   &\sim \mathrm{Exponential}(1) \\
+\vec{R}             &\sim \mathrm{LJKCorr(4)}
 \end{aligned}$$
 
+```{r ChimbStanMVOC, child='../models/l4_m1.stan', eval=FALSE}
+```
 
-## Posterior Social Networks
 
-Now the resultant network does not give just one network, some of the network might be stable between samples of the posterior, but others will change. The inference made on the network downstream must take multiple samples from the network posterior for the calculation, giving you the inherited uncertainty.
+```{r ChimbStanCallMVOC}
+m1 <- cstan(file='../models/l14_m1.stan', data=d, chains=4, cores=8, threads=2, iter=4000)
+precis(m1, depth=3)
+dashboard(m1)
+```
 
-Also remember that there are relationships beyond two, so tryads and onwards could be important.
+```{r ChimbSimMVOC}
+post <- extract.samples(m1)
 
-## Association Index
+araw <- inv_logit(apply(post$a, 3, function(x) x + post$abar))
+pA <- cbind(expand.grid(S=1:dim(post$a)[1], A=1:dim(post$a)[2], T=c('R/N','L/N','R/P','L/P')), p=as.vector(araw)) %>% 
+  group_by(A,T) %>% 
+  summarise(mean=mean(p), hpdi=HPDI(p)) %>%
+  ungroup() %>% 
+  group_by(A,T,mean) %>% 
+	summarise(hpdi_lower=min(hpdi), hpdi_upper=max(hpdi)) %>% 
+  as.data.frame() %>% 
+  ungroup()
 
-What if we also had a measure of association $A_{AB}$ between two households and their wealth $W_{A}$.
-$$\begin{aligned}
-G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
-\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} + \beta_{A}A_{AB} + G_{A} + \beta_{WG} W_{A} + R_{B} + \beta_{WR} W_{B} \\
-G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
-\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} + \beta_{B}A_{AB} + G_{B} + \beta_{WG} W_{B} + R_{A} + \beta_{WR} W_{A}\\
-\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma^{2} \end{matrix}\right]\right) \\
-\left(\begin{matrix} G_{A} \\ R_{A} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], R_{GR}, S_{GR}\right) \\
-\alpha, \beta_{j,R}, \beta_{j,G}, \beta_{A} &\sim \mathrm{Normal}(0,1) \\
-\sigma, S_{GR}  &\sim \mathrm{Exponential}(1) \\
-\rho, R_{GR}    &\sim \mathrm{LJKCorr(2)}
-\end{aligned}$$
+ggplot(pA) +
+	geom_point(aes(x=A, y=mean, colour='', group=`T`), position=position_dodge(width=0.5)) +
+	geom_linerange(aes(x=A, ymin=hpdi_lower, ymax=hpdi_upper, colour='', group=`T`), position=position_dodge(width=0.5)) +
+	theme(legend.position='none') +
+	scale_color_tableau()
+
+braw <- inv_logit(apply(post$b, 3, function(x) x + post$bbar))
+pB <- cbind(expand.grid(S=1:dim(post$b)[1], B=1:dim(post$b)[2], T=c('R/N','L/N','R/P','L/P')), p=as.vector(braw)) %>% 
+	select(-S) %>% 
+	group_by(B,T) %>% 
+	summarise(mean=mean(p), hpdi=HPDI(p)) %>% 
+  ungroup() %>% 
+  group_by(B,T,mean) %>% 
+	summarise( hpdi_lower=min(hpdi), hpdi_upper=max(hpdi)) %>% 
+  ungroup()
+
+ggplot(pB) +
+	geom_point(aes(x=T, y=mean, colour='', group=B), position=position_dodge(width=0.5)) +
+	geom_linerange(aes(x=T, ymin=hpdi_lower, ymax=hpdi_upper, colour='', group=B), position=position_dodge(width=0.5)) +
+	theme(legend.position='none')+
+	scale_color_tableau()
+
+data.frame(sigma_A=post$sigma_A, sigma_B=post$sigma_B, tau_A=post$tau_A, tau_B=post$tau_B) %>% 
+	pivot_longer(everything(), names_to='var', values_to='sigma') %>% 
+	ggplot() +
+	geom_density(aes(x=sigma, colour=var)) +
+	scale_colour_tableau()
+```
+ 
