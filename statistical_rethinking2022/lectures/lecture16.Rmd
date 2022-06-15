@@ -1,0 +1,27 @@
+# Lecture 16: Gaussian Process
+
+## Kernal Functions
+
+Rather than using a correlation matrix to determine covariation uses a functional form, a kernal function. This allows infinite dimensional normals, but in a sense with even less parameters than correlation approaches. One does have to pick the correct kernal function. This just replaces the correlation matrix from before.
+
+### Quadratic (L2)
+
+$$k(x,y) = \alpha^{2} \exp\left( - \frac{(x-y)^{2}}{\sigma^{2}} \right)$$
+
+### Ornstein-Uhlenbeck (L1)
+
+$$k(x,y) = \alpha^{2} \exp\left( - \frac{|x-y|}{\sigma} \right)$$
+
+### Periodic
+
+$$k(x,y) = \alpha^{2} \exp\left( - \frac{2\sin^{2}((x-y)/2)}{\sigma^{2}} \right)$$
+
+## Phylogony
+
+Remember phylogeny doesn't exist, it is just a potentially useful model with some features we want. In fact there are multiple phylogenies for each dataset that could be argued for. Ideally we want to fit our model over the phylogeny at the same time we fit our phylogeny and then make inferences drawing from the posterior from this.
+
+## Further Gaussian Progression
+
+- **Automatic relevance determination (ARD):** Automatic weight fitting across multiple parameters, figuring out automatically relative weights in your model. Used a lot in machine learning.
+- **Multi Output Gaussian Proccess:** Rather than outputting a single value from distance, output a vector.
+- **Kalman Filters:** Noisey instrumentation.
