@@ -43,7 +43,7 @@ d <- list( T = (df$prosoc_left + 1) + 2*(df$condition)
  d$N_A <- max(d$A)
 ```
 
-```{r ChimbStanMV, child='../models/l4_m0.stan', eval=FALSE}
+```{r ChimbStanMV, child='../models/l14_m0.stan', eval=FALSE}
 ```
 
 

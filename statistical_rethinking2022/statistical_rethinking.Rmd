@@ -77,8 +77,13 @@ library(tidyverse)
 ```{r lecture16, child = if(params$chapters == 'all') 'lectures/lecture16.Rmd' }
 ```
 
+```{r lecture17, child = if(params$chapters == 'all') 'lectures/lecture17.Rmd' }
+```
+
 ```{r chapter, child = if(params$chapters != 'all') params$chapters }
 ```
+
+# Session
 
 ```{r session}
 sessionInfo()

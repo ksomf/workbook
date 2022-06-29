@@ -1,0 +1,131 @@
+# Lecture 17: Measurement Error
+
+Resist the urge to be clever
+
+## Error's in DAGs
+
+\begin{tikzcd}
+Ptrue & Pmeas \arrow[l] & eP \arrow[l]
+\end{tikzcd}
+
+### Marriage Rates with Errors
+
+We had marriage rate happines model, with age being a factor. 
+
+\begin{tikzcd}
+& A \arrow[dr] \arrow[dl] \\
+M \arrow[rr] && H
+\end{tikzcd}
+
+Now imagine we had error of measurement in all of these
+
+\begin{tikzcd}
+& & eA \arrow[d] \\
+& & Ao  \\
+eM \arrow[d] & & At \arrow[u] \arrow[dr] \arrow[dl] && eH \arrow[d] \\
+Mo & Mt \arrow[l] \arrow[rr] && Ht \arrow[r] & Ho
+\end{tikzcd}
+
+Noting that we no longer observe the true values in our relationship. In fact we can now think of confounding variables that affect the error, for instance a population. However lets walk back a step and just go with this model. Let's start with just $D$, we use two simultaneous models
+
+$$ \begin{aligned}
+D^{true}_{i} &\sim \mathrm{Normal}(\mu_{i},\sigma) \\
+\mu_{i}      &= \alpha + \beta_{M} M_{i} + \beta_{A} A_{i} \\
+\\
+D^{obs}_{i} &\sim \mathrm{Normal}(D^{true}_{i},S_{i})
+\end{aligned}$$
+
+So lets run this model, and see what the results does.
+
+```{r MarriageErrorLoad}
+data(WaffleDivorce)
+df <- WaffleDivorce
+
+d <- list(
+	D_obs = standardize( df$Divorce )
+,	D_std = df$Divorce.SE / sd(df$Divorce)
+,	M     = standardize( df$Marriage )
+,	A     = standardize( df$MedianAgeMarriage )
+,	N     = nrow(df)
+)
+```
+
+Then it is a simple as writing up the dual models. Yes this is exactly a partial pooling.
+
+```{r MarriageDivorceStan, child='../models/l17_m0.stan', eval=FALSE}
+```
+
+```{r MarriageDivorceStanRun}
+m0 <- cstan(file='../models/l17_m0.stan', data=d, chains=4, cores=4, threads=2, iter=4000)
+precis(m0, depth=2)
+dashboard(m0)
+```
+
+```{r MarriageDivorceStanVis}
+post <- extract.samples(m0)
+df$D_true <- post$D_true %>% apply(2,mean)
+df$D_obs  <- d$D_obs
+df$A      <- d$A
+
+ggplot(df) +
+	geom_point(aes(x=A, y=D_obs , colour='Obs')) +
+	geom_point(aes(x=A, y=D_true, colour='Pred')) +
+	geom_linerange(aes(x=A, ymin=D_obs, ymax=D_true)) +
+	scale_colour_tableau()
+```
+
+We see shrinkage towards the mean, just as we see with partial pooling. However the overall strength of the regression shouldn't have changed that much, the shrinkage has followed the rules. So lets go further and add $M$ error to our model.
+
+$$ \begin{aligned}
+D^{true}_{i} &\sim \mathrm{Normal}(\mu_{i},\sigma) \\
+\mu_{i}      &= \alpha + \beta_{M} M_{i} + \beta_{A} A_{i} \\
+\\
+D^{obs}_{i} &\sim \mathrm{Normal}(D^{true}_{i},S_{i}) \\
+\\
+M^{true}_{i} &\sim \mathrm{Normal}(\nu_{i},\tau) \\
+\nu_{i}      &= \alpha_{M} + \beta_{A,M} A_{i} \\
+\\
+M^{obs} &\sim \mathrm{Normal}(D^{true}_{i},T_{i})
+\end{aligned}$$
+
+Then it is a simple as writing up the dual models. Yes this is exactly a partial pooling.
+
+```{r MarriageDivorceStanM, child='../models/l17_m1.stan', eval=FALSE}
+```
+
+```{r MarriageDivorceStanMRun}
+
+d <- list(
+	D_obs = standardize( df$Divorce )
+,	D_std = df$Divorce.SE / sd(df$Divorce)
+,	M_obs = standardize( df$Marriage )
+,	M_std = df$Marriage.SE / sd(df$Marriage)
+,	A     = standardize( df$MedianAgeMarriage )
+,	N     = nrow(df)
+)
+
+m1 <- cstan(file='../models/l17_m1.stan', data=d, chains=4, cores=4, threads=2, iter=4000)
+precis(m1, depth=2)
+dashboard(m1)
+```
+
+```{r MarriageDivorceStanMVis}
+post <- extract.samples(m1)
+df$D_true <- post$D_true %>% apply(2,mean)
+df$D_obs  <- d$D_obs
+df$M_true <- post$M_true %>% apply(2,mean)
+df$M_obs  <- d$M_obs
+df$A      <- d$A
+
+ggplot(df) +
+	geom_point(aes(x=M_obs, y=D_obs , colour='Obs')) +
+	geom_point(aes(x=M_true, y=D_true, colour='Pred')) +
+	geom_segment(aes(x=M_obs, xend=M_true, y=D_obs, yend=D_true)) +
+	scale_colour_tableau()
+
+ggplot( data.frame(betaD_M=post$betaD_M) ) +
+	geom_density(aes(x=betaD_M, colour='M2D')) +
+	scale_colour_tableau()
+```
+
+Note that the effect of marriage rate now is positive when compared to our older non error model, the effect of large error states no longer has large has an effect.
