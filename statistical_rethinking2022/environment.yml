@@ -1,0 +1,6 @@
+name: rethinking
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - rstan

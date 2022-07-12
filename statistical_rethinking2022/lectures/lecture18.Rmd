@@ -1,0 +1,305 @@
+# Lecture 18: Missing Data
+
+\begin{tikzcd}
+& u \arrow[dl] \arrow[dr] \\
+X \arrow[d] \arrow[rr] & & Y  \\
+oX 
+\end{tikzcd}
+
+What if we have missing data, ie. some $X$ is missing and we only see the observed $oX$.
+
+## Dog Eating Homework
+
+### Basic Dog Eats Homework
+
+\begin{tikzcd}
+E \arrow[r] & H \arrow[d] \\
+D \arrow[r] & oH
+\end{tikzcd}
+
+Suppose we want to see what student effort has on homework quality but dogs eat some of the homework. In this case we can simply drop missing homework as our model says it is done independently. But what about other forms of missing data, oni where dog eating is dependant on some variable. 
+
+### Dog Eats Homework Dependant on Cause
+
+\begin{tikzcd}
+E \arrow[r] \arrow[d] & H \arrow[d] \\
+D \arrow[r] & oH
+\end{tikzcd}
+
+Now for instance the dog eats homework dependant on the effort spent, for instance a neglected dog eats more homework. Now this changes the inference of our model, and we must get the relationship between cause of homework and the dog. If we get it wrong our inference is wrong. However if we model this relationship correctly and/or have additional information this is not a problem.
+
+### Dog Eats Homework Dependant on Homework
+
+\begin{tikzcd}
+E \arrow[r] & H \arrow[d] \arrow[dl] \\
+D \arrow[r] & oH
+\end{tikzcd}
+
+This is much less benign, however if we can model the dog we can still get effective inference. Otherwise it is pretty much hopeless. For instance we might suspect that bad homework gets fed to the dog. This is however a common class of missing data, for instance survival analysis.
+
+## Bayesian Imputation
+
+Now dropping incomplete data can be statistically consistent, it is however not efficient, the non--missing components still tell us something about the data, even if they only inform the population of those values.
+
+One common problem we have is for instance predicting the lifetime of some quantity after some time where some are still remaining (censored observations), that is the endpoint has not been determined for some points but we know it is a least a quantity, by modelling the population of these points we can say something about the eventual population.
+
+### Primate Phylogony
+
+Lets us look at some primate data and try to account for missing values that are present in phylogeny often, in the simplest case, all missing data is random, with no bias.
+
+\begin{tikzcd}
+mG \arrow[d] & mM \arrow[d] & mB \arrow[d] \\
+oG           & oM           & oB           \\
+G  \arrow[u] \arrow[rr] &&    B \arrow[u]  \\
+& M \arrow[ul] \arrow[ur] \arrow[uu]       \\
+& u \arrow[u] \arrow[uul] \arrow[uur] & h \arrow[l]
+\end{tikzcd}
+
+We have group size $G$, Brain size $B$, and Mass $M$. We have some missing rates for these values as well as unobserved confounds $u$ determined by some unknown $h$, as a consequence of our process for acquiring our data. We can use this to make a model if we have some distance matrix $d$.
+
+$$\begin{aligned}
+B         &\sim \mathrm{MVNormal}(\mu_{i},K) \\
+\mu_{i}   &= \alpha + \beta_{G} G_{i} + \beta_{M} M_{i} \\
+K         &= \eta^{2} \exp(-\rho d_{ij}) \\
+\alpha    &\sim \mathrm{Normal}(0,1) \\
+\beta_{j} &\sim \mathrm{Normal}(0,0.5) \\
+\eta^{2}  &\sim \mathrm{HalfNormal}(1,0.25) \\
+\rho      &\sim \mathrm{HalfNormal}(3,0.25)
+\end{aligned}$$
+
+Well lets think about missing values, we could make models for them and then use them to impute the missing values. For instance this kind of model somewhat implies a model for $G$
+
+$$\begin{aligned}
+G            &\sim \mathrm{MVNormal}(\nu_{i},K_{G}) \\
+\nu_{i}      &= \alpha_{G} + \beta_{G,M} M_{i} \\
+K            &= \eta^{2}_{G} \exp(-\rho_{G} d_{ij}) \\
+\alpha_{G}   &\sim \mathrm{Normal}(0,1) \\
+\beta_{G,M}  &\sim \mathrm{Normal}(0,0.5) \\
+\eta^{2}_{G} &\sim \mathrm{HalfNormal}(1,0.25) \\
+\rho_{G}     &\sim \mathrm{HalfNormal}(3,0.25)
+\end{aligned}$$
+
+and similar for $M$
+
+$$\begin{aligned}
+M            &\sim \mathrm{MVNormal}(0,K_{M}) \\
+K_{M}        &= \eta^{2}_{M} \exp(-\rho_{M} d_{ij}) \\
+\alpha_{M}   &\sim \mathrm{Normal}(0,1) \\
+\eta^{2}_{M} &\sim \mathrm{HalfNormal}(1,0.25) \\
+\rho_{M}     &\sim \mathrm{HalfNormal}(3,0.25).
+\end{aligned}$$
+
+We really haven't done much here, except follow the consequences naturally implied by our first model; if our sub model relationships where different, we would expect different relationships for the overarching model. STAN can run these three models simultaneously, cascading implications across them. Consider this in comparison to the independent missing value model
+
+$$\begin{aligned}
+G            &\sim \mathrm{Normal}(0,1) \\
+M            &\sim \mathrm{Normal}(0,1).
+\end{aligned}$$
+
+```{r PrimatesLoad}
+data(Primates301)
+data(Primates301_nex)
+df <- Primates301 %>% 
+	mutate( G = standardize(log(group_size))
+		  , M = standardize(log(body))
+		  , B = standardize(log(brain))
+		  , name = as.character(name) ) %>% 
+	subset( complete.cases(B) )
+
+dfc <-  subset( df, complete.cases(B,M,G))
+	
+
+names        <- df$name
+tree_trimmed <- keep.tip(Primates301_nex, names)
+Dmat         <- cophenetic(tree_trimmed)
+
+d <- list( G          = ifelse(is.na(df$G),-99,df$G)
+		 , M          = ifelse(is.na(df$M),-99,df$M)
+		 , B          = ifelse(is.na(df$B),-99,df$B)
+		 , N_G_miss   = sum(is.na(df$G))
+		 , N_M_miss   = sum(is.na(df$M))
+		 , N_B_miss   = sum(is.na(df$B))
+		 , G_miss_idx = which(is.na(df$G))
+		 , M_miss_idx = which(is.na(df$M))
+		 , B_miss_idx = which(is.na(df$B))
+		 , N          = nrow(df) 
+		 , Dmat       = Dmat[names,names] / max(Dmat))
+
+d2 <- list( G          = df$G
+		  , M          = df$M
+		  , B          = df$B
+		  , N_G_miss   = sum(is.na(df$G))
+		  , N_M_miss   = sum(is.na(df$M))
+		  , N_B_miss   = sum(is.na(df$B))
+		  , G_miss_idx = which(is.na(df$G))
+		  , M_miss_idx = which(is.na(df$M))
+		  , B_miss_idx = which(is.na(df$B))
+		  , N          = nrow(df) 
+		  , Dmat       = Dmat[names,names] / max(Dmat))
+
+namesc        <- dfc$name
+tree_trimmedc <- keep.tip(Primates301_nex, namesc)
+Dmatc         <- cophenetic(tree_trimmedc)
+dc <- list( G          = dfc$G
+		  , M          = dfc$M
+		  , B          = dfc$B
+		  , N          = nrow(dfc) 
+		  , Dmat       = Dmatc[namesc,namesc] / max(Dmatc))
+```
+
+```{r PrimatesEDA}
+ggplot(df) +
+	geom_point(aes(x=M, y=B, colour='Observed'), na.rm=T) +
+	geom_hline(aes(yintercept=B, colour='Missing'), data=df %>% subset(is.na(M)), na.rm=T) +
+	scale_color_tableau() +
+	theme_minimal()
+```
+
+So of course lets try the simple model first
+
+```{r PrimateSimpleModelStan, child='../models/l18_minimal.stan', eval=FALSE}
+```
+
+```{r PrimateSimpleModelStanRun}
+m1 <- cstan(file='../models/l18_minimal.stan', data=d, chains=4, cores=12, threads=3, iter=2000)
+precis(m1, depth=2)
+dashboard(m1)
+```
+```{r PrimateSimpleModelImputes}
+p1 <- extract.samples(m1)
+
+gen_df <- function(p){
+	df1_M <- p$M_impute %>%
+		apply(2, post_summary) %>%
+		as.data.frame %>%
+		pivot_longer(everything(), names_to='M', names_prefix='V', values_to='M_impute') %>%
+		group_by(M) %>% summarise(M_impute_lower=min(M_impute), M_impute_median=median(M_impute), M_impute_upper=max(M_impute)) %>%
+		mutate(M = df[d$M_miss_idx,] %>% rownames()) %>% 
+		column_to_rownames('M')
+	
+	df1_G <- p$G_impute %>%
+		apply(2, post_summary) %>%
+		as.data.frame %>%
+		pivot_longer(everything(), names_to='G', names_prefix='V', values_to='G_impute') %>%
+		group_by(G) %>% summarise(G_impute_lower=min(G_impute), G_impute_median=median(G_impute), G_impute_upper=max(G_impute)) %>%
+		mutate(G = df[d$G_miss_idx,] %>% rownames()) %>% 
+		column_to_rownames('G')
+	
+	df1 <- df %>%
+		merge(df1_M, by='row.names', all.x=T) %>% 
+		select(-'Row.names') %>% 
+		merge(df1_G, by='row.names', all.x=T) %>% 
+		select(-'Row.names')
+}
+
+df1 <- gen_df(p1)
+
+ggplot(df1) +
+	geom_point(aes(x=M, y=B, colour='Observed'), na.rm=T) +
+	geom_segment(aes(x=M_impute_lower, xend=M_impute_upper, y=B, yend=B, colour="Impute"), na.rm=T) +
+	geom_point(  aes(x=M_impute_median                    , y=B        , colour="Impute"), na.rm=T) +
+	scale_color_tableau() +
+	theme_minimal()
+
+ggplot(df1) +
+	geom_point(aes(x=M, y=G, colour='Observed'), na.rm=T) +
+	geom_segment(aes(x=M, xend=M, y=G_impute_lower, yend=G_impute_upper, colour="Impute"), na.rm=T) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute"), na.rm=T) +
+	scale_color_tableau() +
+	theme_minimal()
+```
+As we can see from our imputation, the model requires no phylogeny to impute $M$, however it does not impute a precise $G$ at all.
+
+```{r PrimateInteModelStana, child='../models/l18_BG_phylo.stan', eval=FALSE}
+```
+
+```{r PrimateInteModelStanb, child='../models/l18_BG_model.stan', eval=FALSE}
+```
+
+```{r PrimateInteModelStan, child='../models/l18_BG.stan', eval=FALSE}
+```
+
+```{r PrimateInteModelStanRun}
+m2a <- cstan(file='../models/l18_BG_phylo.stan', data=d, chains=4, cores=12, threads=3, iter=2000)
+m2b <- cstan(file='../models/l18_BG_model.stan', data=d, chains=4, cores=12, threads=3, iter=2000)
+m2 <- cstan(file='../models/l18_BG.stan'       , data=d, chains=4, cores=12, threads=3, iter=2000)
+
+precis(m2a, depth=2)
+precis(m2b, depth=2)
+precis(m2 , depth=2)
+
+dashboard(m2a)
+dashboard(m2b)
+dashboard(m2)
+```
+```{r PrimateInteModelImputes}
+p2a <- extract.samples(m2a)
+p2b <- extract.samples(m2b)
+p2  <- extract.samples(m2 )
+
+df2a <- gen_df(p2a) %>% 
+	mutate(M = M+.05, B = B+.05)
+df2b <- gen_df(p2b) %>% 
+	mutate(M = M+.10, B = B+.10)
+df2  <- gen_df(p2 )
+
+ggplot(df2) +
+	geom_point(aes(x=M, y=B, colour='Observed'), na.rm=T) +
+	geom_segment(aes(x=M_impute_lower, xend=M_impute_upper, y=B, yend=B, colour="Impute (both)") , na.rm=T) +
+	geom_point(  aes(x=M_impute_median                    , y=B        , colour="Impute (both)") , na.rm=T) +
+	geom_segment(aes(x=M_impute_lower, xend=M_impute_upper, y=B, yend=B, colour="Impute (phylo)"), na.rm=T, data=df2a) +
+	geom_point(  aes(x=M_impute_median                    , y=B        , colour="Impute (phylo)"), na.rm=T, data=df2a) +
+	geom_segment(aes(x=M_impute_lower, xend=M_impute_upper, y=B, yend=B, colour="Impute (model)"), na.rm=T, data=df2b) +
+	geom_point(  aes(x=M_impute_median                    , y=B        , colour="Impute (model)"), na.rm=T, data=df2b) +
+	scale_color_tableau() +
+	theme_minimal()
+
+ggplot(df2) +
+	geom_point(aes(x=M, y=G, colour='Observed'), na.rm=T) +
+	geom_segment(aes(x=M, xend=M, y=G_impute_lower, yend=G_impute_upper, colour="Impute (both)") , na.rm=T) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (both)") , na.rm=T) +
+	geom_segment(aes(x=M, xend=M, y=G_impute_lower, yend=G_impute_upper, colour="Impute (phylo)"), na.rm=T, data=df2a) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (phylo)"), na.rm=T, data=df2a) +
+	geom_segment(aes(x=M, xend=M, y=G_impute_lower, yend=G_impute_upper, colour="Impute (model)"), na.rm=T, data=df2b) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (model)"), na.rm=T, data=df2b) +
+	scale_color_tableau() +
+	theme_minimal()
+
+ggplot(df2) +
+	geom_point(aes(x=M, y=G, colour='Observed'), na.rm=T) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (both)") , na.rm=T) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (phylo)"), na.rm=T, data=df2a) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (model)"), na.rm=T, data=df2b) +
+	geom_point(  aes(x=M        , y=G_impute_median                    , colour="Impute (dist.)"), na.rm=T, data=df1 ) +
+	scale_color_tableau() +
+	theme_minimal()
+```
+Now we see that our imputation is now more correct, coming mainly from the phylogenetic information. Of course however the full model is the only academically honest model to show.
+
+```{r PrimateFullModelStan, child='../models/l18_BGM.stan', eval=FALSE}
+```
+
+```{r PrimateFullModelStanRun}
+m3 <- cstan(file='../models/l18_BGM.stan', data=d, chains=4, cores=12, threads=3, iter=2000)
+precis(m3, depth=2)
+dashboard(m3)
+```
+```{r PrimateFullModelPost}
+p3  <- extract.samples(m3)
+df3 <- gen_df(p3)
+
+GonB <- list( single=p1$betaB_G
+		    , double_both=p2$betaB_G
+		    , double_phylo=p2a$betaB_G
+		    , double_model=p2b$betaB_G
+		    , triple_model=p3$betaB_G )
+df_b <- map_dfr(GonB, ~data.frame(beta=.), .id='group')
+
+
+ggplot(df_b) +
+	geom_density(aes(x=beta, colour=group)) +
+	scale_color_tableau() +
+	theme_minimal()
+```
+
+It is clear from this that while a lot of the more developed model produces the same result by consuming more of the available information the simple models do no capture the correct inference as precisely.

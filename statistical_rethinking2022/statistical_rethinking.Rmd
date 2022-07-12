@@ -23,7 +23,13 @@ library(ggplot2)
 library(ggthemes)
 library(rethinking, quietly=TRUE)
 library(gtools)
+library(ape)
 library(tidyverse)
+
+post_summary <- function(xs){
+	h <- HPDI(xs)
+	return( c(h[[1]], median(xs), h[[2]]) )
+}
 ```
 
 ```{r introduction, child = if(params$chapters == 'all') 'lectures/introduction.Rmd' }
@@ -78,6 +84,12 @@ library(tidyverse)
 ```
 
 ```{r lecture17, child = if(params$chapters == 'all') 'lectures/lecture17.Rmd' }
+```
+
+```{r lecture18, child = if(params$chapters == 'all') 'lectures/lecture18.Rmd' }
+```
+
+```{r lecture19, child = if(params$chapters == 'all') 'lectures/lecture19.Rmd' }
 ```
 
 ```{r chapter, child = if(params$chapters != 'all') params$chapters }
