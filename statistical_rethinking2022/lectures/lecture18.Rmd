@@ -303,3 +303,7 @@ ggplot(df_b) +
 ```
 
 It is clear from this that while a lot of the more developed model produces the same result by consuming more of the available information the simple models do no capture the correct inference as precisely.
+
+## Censored Observation
+
+Blending togethor missing data and measurement error is censored observation. For instance time that academics stay in academia post Ph.D. We do not know for sure when current academics will leave, but we can say something about the distribution of people remaining, and we already have information about a minimum value for these people. It is a mistake to ignore events that might yet happen.

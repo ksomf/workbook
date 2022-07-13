@@ -1,0 +1,47 @@
+# Lecture 19: GLM Madness
+
+We can use GLM and GLMM to get effective fits for very unreasonable amount of problems. However a scientifically motivated model is always going to contribute more to our understanding of problems. Vitally this include misfitting models!!! Where the fit fails informs the weaknesses in the scientific model. 
+
+To use a scientific model remember the constraints on your data, you can often simplify your model. For instance take modelling weight and height
+
+$$W = k \pi p^{2} H^{3}$$
+
+can be simplified to 
+
+$$W = H^{3}$$
+
+by normalising your height and weight to have $1$ be the average for both.
+
+## State Based (Conditional) Probability
+
+Simply code it up in a for loop in STAN. This allows you to attempt to decompose states for instance
+
+$$\begin{aligned}
+Y_{i} &\sim \mathrm{Categorical}(\theta_{i}) \\
+\theta_{i} &= \sum_{S} p_{S} \Pr(Y=i|S) \\
+p_{j} &\sim \mathrm{Dirchlet}(\vec{4})
+\end{aligned}$$
+
+```{r BoxStan}
+data(Boxes_model)
+cat(Boxes_model)
+```
+
+We refer to the choices as emissions and we want to extract the strategies; the latent states. A decoding is often very noisy, but it really is the only honest way to report the results.
+
+## Population Dynamics
+
+For instance a predator--prey population dynamics. Scientifically we measure Lynxes $L$ and Hares $H$. We can think of the change in population as a set of coupled differential equations
+
+$$\begin{aligned}
+\frac{\partial N_{H}}{\partial t} &= N_{H} \left( b_{H} - m_{H}N_{L} \right) \\
+\frac{\partial N_{L}}{\partial t} &= N_{L} \left( b_{L}N_{H} - m_{L}\right)
+\end{aligned}$$
+
+So we could model this taking into account our model has measurement error as we only have proxies of number of animals (trapping)
+
+```{r LHStan}
+data(Lynx_Hare_model)
+cat(Lynx_Hare_model)
+```
+Note we use the familiar `integrate_ode_rk45`. This is just a brief presentation of other types of analysis possible as well. The point is that if every field is just using linear regression and t--tests then they are just throwing out linear regression. For this we should postpone the statistics, and start with scientific reasoning. While scientific models are flawed, despite their flaws they are productive.

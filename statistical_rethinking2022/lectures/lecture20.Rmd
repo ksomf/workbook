@@ -1,0 +1,61 @@
+# Lecture 20: Horoscopes
+
+## The general reporting template
+
+Taking the dyad model we want to provide the DAG
+
+\begin{tikzcd}
+& TBA \arrow[d] \\
+HA \arrow[r] \arrow[ur] \arrow[dr] & GAB & HB \arrow[l] \arrow[dl] \arrow[ul] \\
+& TAB \arrow[u]
+\end{tikzcd}
+
+as well as the model
+
+$$\begin{aligned}
+G_{AB}       &\sim \mathrm{Poisson}(\lambda_{AB}) \\
+\mathrm{log}(\lambda_{AB}) &= \alpha + T_{AB} + G_{A} + R_{B} \\
+G_{BA}       &\sim \mathrm{Poisson}(\lambda_{BA}) \\
+\mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} + G_{B} + R_{A}\\
+\left(\begin{matrix} T_{AB} \\ T_{BA} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], \left[\begin{matrix} \sigma^{2} & \rho\sigma^{2} \\ \rho\sigma^{2} & \sigma^{2} \end{matrix}\right]\right) \\
+\left(\begin{matrix} G_{A} \\ R_{A} \end{matrix}\right) &\sim \mathrm{MVNormal}\left(\left[\begin{matrix} 0 \\ 0 \end{matrix}\right], R_{GR}, S_{GR}\right) \\
+\alpha  &\sim \mathrm{Normal}(0,1) \\
+\sigma, S_{GR}  &\sim \mathrm{Exponential}(1) \\
+\rho, R_{GR}    &\sim \mathrm{LJKCorr(2)}.
+\end{aligned}$$
+
+We also want to provide description of the method to, here is **a** template for a minimal honest best practice:
+
+### Model Description
+
+**To estimate reciprocity within dyads, we model the correlation within dyads in giving, using a multilevel mixed--membership model (textbook citation).**
+
+- From reviewers, there is a classical reviewer who thinks that if the science were done well, it would have simple stats or no stats at all (*Good science doesn't need complex stats*). **This is ridiculous**
+	- Rebut it to the editor, and switch to the causal model not the statistics. Justify the stratification causally, which requires your statistical complexity.
+	- Just because a simple procedure qualitatively gives the same answer doesn't mean we should use more statistically rigorous methods. The more complicated one typically look for confounds and unit heterogeneity, and we don't want to be right because we got lucky. Knowledge is justified true belief, not just belief.
+	- The review comment is better in general, change discussion from statistics to causal models, here justification is king. Be sure to remain civil.
+
+
+### Do Calculus
+
+**To control for confounding from generalised giving and receiving, as indicated by (DAG link), we stratify by giving and receiving by household. The full model with priors is (equ link).**
+
+- Why we think the model works
+- **Priors were chosen through prior predictive simulation so that pre--data predictions span the range of scientifically plausible outcomes. In the results, we explicitly compare posterior prediction and prior, so that the impact of the sample is obvious.**
+
+### Simulation
+
+**We estimate the posterior distribution using Hamiltonian Monte Carlo as implemented in STAN (version, citation).**
+
+- To further science we want good software, to get good software they need measures of success to be able to keep doing what they are doing; such as citations, so cite all software.
+
+### Diagnostic
+
+**We validated the model on simulated data and assessed convergence by inspection of trace plots, R--hat values, and effective sample sizes. Diagnostics are reported in (Appendix Link) and all results can be replicated using the code available at (link). **
+
+### Results
+
+- Avoid all too easy misunderstandings, avoid language that would confuse non--Bayesian familiar scientists, show posteriors and avoid things easily confused for confidence intervals and cite introductionary review papers in the field that can help people
+- Talk about any missing values
+- Describe control variable interpretation, make sure it is obvious some cannot be interpreted
+- Densities are better than intervals, sample realisations (functions)

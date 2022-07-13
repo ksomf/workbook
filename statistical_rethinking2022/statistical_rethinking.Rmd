@@ -92,6 +92,9 @@ post_summary <- function(xs){
 ```{r lecture19, child = if(params$chapters == 'all') 'lectures/lecture19.Rmd' }
 ```
 
+```{r lecture20, child = if(params$chapters == 'all') 'lectures/lecture20.Rmd' }
+```
+
 ```{r chapter, child = if(params$chapters != 'all') params$chapters }
 ```
 
