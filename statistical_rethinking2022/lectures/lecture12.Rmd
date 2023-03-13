@@ -26,3 +26,64 @@ For intance in our case the individual might have their own preference, simply r
 - Different levels **do not** need to be sampled at random
 - **Do not** need large sample sizes
 - This **does not** assume Gaussian variation
+
+## Mundlak Machines
+
+Suppose one had a model:
+
+\begin{tikzcd}
+& U \arrow[d] \arrow[dl] \\
+X \arrow[r] & Y \\
+& Z \arrow[u]
+\end{tikzcd}
+
+with unobserved $U$ and group level trait $Z$. How does one dela with $US$.
+
+### Fixed Effect Model
+
+$$\begin{aligned}
+Y_{i}        &= \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \alpha_{U[i]} + \beta_{X} X_{i} + \beta_{Z} Z_{U[i]} \\
+\alpha_{j}   &= \mathrm{Normal}(0,10) \\
+\beta_{j}    &= \mathrm{Normal}(0,1).
+\end{aligned}$$
+
+Inefficient, soaking up group level (fixed) effects of the confound $US, but cannot identify $Z$ (Technically we shouldn't include $Z$ at all in the model).
+
+### Partial Pooling
+
+$$\begin{aligned}
+Y_{i}        &= \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \alpha_{U[i]} + \beta_{X} X_{i} + \beta_{Z} Z_{U[i]} \\
+\alpha_{j}   &= \mathrm{Normal}(\phi,\tau) \\
+\beta_{j}    &= \mathrm{Normal}(0,1) \\
+\phi         &= \mathrm{Normal}(0,1) \\
+\tau         &= \mathrm{Exponential}(1).
+\end{aligned}$$
+
+Better estimate for $U$, worse for $X$. However we can now measure $U$.
+
+### Mundlak Machine
+
+\begin{tikzcd}
+X' & U \arrow[l] \arrow[d] \arrow[dl] \\
+X \arrow[r] & Y \\
+& Z \arrow[u]
+\end{tikzcd}
+
+with group average $X'$ and modified partial pooling logit:
+
+$$logit(p_{i}) = \alpha_{U[i]} + \beta_{X} X_{i} + \beta_{Z} Z_{U[i]} + \beta_{X'} X'_{U[i]}.$$
+
+Better $X$ but ignore quality of $X'$ for each group.
+
+### Latent Mundlak Machine (Mundlak FLB)
+
+$$\begin{aligned}
+Y_{i}        &= \mathrm{Bernoulli}(p_{i}) \\
+logit(p_{i}) &= \alpha_{U[i]} + \beta_{X} X_{i} + \beta_{Z} Z_{U[i]} + \beta{GY} G[U] \\
+X_{i}        &= \mathrm{Normal}(\mu_{i}, \sigma) \\
+\mu_{i}      &= \alpha_{X} + \beta_{GX} G[U] \\
+\end{aligned}$$
+
+The best in all regards except computational time.
